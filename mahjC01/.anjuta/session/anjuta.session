@@ -1,0 +1,27 @@
+
+[Anjuta]
+Maximized=1
+Geometry=1680x960+0+25
+
+[Project Manager]
+Shortcut=C file:///media/c/Users/lujian/Desktop/92382186mahj_bilk4.2/mahj_bilk4.2/md5 md5 %%%C file:///media/c/Users/lujian/Desktop/92382186mahj_bilk4.2/mahj_bilk4.2/tag tag %%%C file:///media/c/Users/lujian/Desktop/92382186mahj_bilk4.2/mahj_bilk4.2/ctags ctags %%%C file:///media/c/Users/lujian/Desktop/92382186mahj_bilk4.2/mahj_bilk4.2/tags tags %%%C file:///media/c/Users/lujian/Desktop/92382186mahj_bilk4.2/mahj_bilk4.2/ctag ctag %%%C file:///media/c/Users/lujian/Desktop/92382186mahj_bilk4.2/mahj_bilk4.2/clean clean %%%C file:///media/c/Users/lujian/Desktop/92382186mahj_bilk4.2/mahj_bilk4.2/$(TARGET) $(TARGET) %%%C file:///media/c/Users/lujian/Desktop/92382186mahj_bilk4.2/mahj_bilk4.2/rebuilt rebuilt %%%C file:///media/c/Users/lujian/Desktop/92382186mahj_bilk4.2/mahj_bilk4.2/del del %%%C file:///media/c/Users/lujian/Desktop/92382186mahj_bilk4.2/mahj_bilk4.2/$(TARGET) $(TARGET) %%%C file:///media/c/Users/lujian/Desktop/92382186mahj_bilk4.2/mahj_bilk4.2/ALL ALL %%%C file:///media/c/Users/lujian/Desktop/92382186mahj_bilk4.2/mahj_bilk4.2/md md %%%C file:///media/c/Users/lujian/Desktop/92382186mahj_bilk4.2/mahj_bilk4.2/allclean allclean 
+
+[File Loader]
+Files=file:///media/c/Users/lujian/Desktop/92382186mahj_bilk4.2/mahj_bilk4.2/mahj2.c#273
+
+[Document Manager]
+bookmarks=<?xml version="1.0" encoding="UTF-8"?>\n<bookmarks/>\n
+
+[Execution]
+Program arguments=
+Program uri=file:///media/c/Users/lujian/Desktop/92382186mahj_bilk4.2/mahj_bilk4.2/a
+Run in terminal=2
+Working directories=file:///media/c/Users/lujian/Desktop/92382186mahj_bilk4.2/mahj_bilk4.2
+
+[Build]
+Configuration list=1:Default:%%%1:Debug:Debug%%%1:Profiling:Profiling%%%1:Optimized:Optimized
+Selected Configuration=Default
+BuildArgs/Default=--enable-maintainer-mode
+BuildArgs/Debug=--enable-maintainer-mode 'CFLAGS=-g -O0' 'CXXFLAGS=-g -O0' 'JFLAGS=-g -O0' 'FFLAGS=-g -O0'
+BuildArgs/Profiling=--enable-maintainer-mode 'CFLAGS=-g -pg' 'CXXFLAGS=-g -pg' 'JFLAGS=-g -pg' 'FFLAGS=-g -pg'
+BuildArgs/Optimized=--enable-maintainer-mode 'CFLAGS=-O2' 'CXXFLAGS=-O2' 'JFLAGS=-O2' 'FFLAGS=-O2'
