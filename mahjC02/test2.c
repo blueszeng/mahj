@@ -1,22 +1,69 @@
-#include <unistd.h>
-#include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+#include <time.h>
+#include <stdlib.h>
+struct timeval timeVal[10];
 
-#define MAX_NUM 10
-int main(int argc,char **argv)
+struct timeval setTime(int i)
 {
-char*str;
-str = (char*)malloc(sizeof(char)*MAX_NUM);
-if(!str)
-exit(-1);
-
-int i;
-for(i=0;i<MAX_NUM+2;i++){
-str[i] = 'a';
+	gettimeofday(&timeVal[i],0);
 }
 
-free(str);
-free(str);
-return 0;
+int getRunTime(int start,int end)
+{
+	setTime(end);
+	int time = 1000000 * (timeVal[end].tv_sec-timeVal[start].tv_sec)+ timeVal[end].tv_usec-timeVal[start].tv_usec;
+	printf("time::%d\n",time);
+	return time;
+}
+
+#define N 0x7FFFFFFU 
+int main()
+{
+    unsigned int i;
+    double a,b,c;
+    unsigned long long t;
+    clock_t c_start, c_end;
+    printf("%d\n", sizeof(clock_t));
+
+    a = 2.3928318;
+    b = 83.328321;
+
+    c_start = clock();
+    for(i = 0; i < N; i++)
+        ; /* null loop */
+    c_end = clock();
+    t = c_end - c_start;
+    printf("%llu\n", t);
+
+    c_start = clock();
+    for(i = 0; i < N; i++)
+        c = a * b; /* float multi */
+    c_end = clock();
+    t = c_end - c_start;
+    printf("%llu\n", t);
+
+    c_start = clock();
+	int an[100];
+    for(i = 0; i < N; i++)
+	{
+		int j = i%100;
+		an[j] = j;
+	}
+    c_end = clock();
+    t = c_end - c_start;
+    printf("%llu\n", t);
+
+    c_start = clock();
+	int *p = an;
+	p = (int *)malloc(4*100);
+    for(i = 0; i < N; i++)
+	{
+		int j = i%100;
+		*(p+j) = j;
+	}
+    c_end = clock();
+    t = c_end - c_start;
+    printf("%llu\n", t);
+
+    return 0;
 }

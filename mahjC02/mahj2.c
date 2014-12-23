@@ -1,11 +1,10 @@
-#define _GNU_SOURCE
 #include <stdio.h>
 #include<time.h>
 #include<string.h>
 #include<math.h>
 #include<ctype.h>
 #include <stdlib.h>
-#include "mah_head.h"
+#include "mahj2.h"
 
 #include <sys/types.h>
 #include <sys/time.h>

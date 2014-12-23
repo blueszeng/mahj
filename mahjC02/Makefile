@@ -19,13 +19,13 @@
 FLAGS =  -g 
 #LIB = -L/usr/lib/mysql/ -lpthread
 #INCLUDE =   -I/usr/include/mysql  -I./
-CC = gcc
+CC = g++ 
 
 SOURCE := $(wildcard *.c) $(wildcard *.h)
 
 #SRC_SOURCE := $(wildcard ../src/*.c) $(wildcard ../include/*.h)
 
-MAIN = mahj2.c
+MAIN = mahj3.c
 TARGET = a 
 
 ALL:$(TARGET)

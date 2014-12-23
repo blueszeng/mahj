@@ -4,19 +4,26 @@
 #include<math.h>
 #include<ctype.h>
 #include <stdlib.h>
-#include "mah_head.h"
+#include "mahj3.h"
 
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 
-int zong=0;
-int buhu=0;
-int normalNum = 0;
-NodeRes *startRes = NULL;
-NodeRes *endRes = NULL;
-JIANG jiang;
-TreeNode *root = NULL;
+int g_zong=0;
+JIANG g_jiang;
+TreeNode *g_root;
+SPai *g_spai[4];
+SPai *g_spaiEnd[4];
+SSPai *g_sspai[4];
+SSPai *g_sspaiEnd[4];
+MAHJ g_mahj[pNum];
+Chunk *g_chunk=NULL;
+Chunk *g_chunkEnd=NULL;
+NodeRes *g_result=NULL;
+NodeRes *g_resultEnd=NULL;
+int g_huNum = 0;
+int g_normalNum = 0;
 
 struct timeval timeVal[10];
 
@@ -51,14 +58,13 @@ int main(int argc, char *argv[])
 	FILE * fp = NULL;
 	char * line = NULL;
     size_t len = 0;
-	char *delim=" ";
+	const char *delim=" ";
 	char *p;
 	int mah[pNum], mah_num = 0, j; 
-	MAHJ mahj[pNum];
 	int count = 0,flag = 0;
 	int color, val, ture_color;
 	Card cards[4][9]; 
-	 fp = fopen("test.txt", "r");//打开文件
+	 fp = fopen("data3", "r");//打开文件
 	 if (fp == NULL)
 	 {
 		 printf("打开文件失败！\n");
@@ -68,14 +74,14 @@ int main(int argc, char *argv[])
      while ((getline(&line, &len, fp)) != EOF) //读取一行
 	{	
 		memset(&mah,0,sizeof(mah));//二维数组初始化为0
-		memset(&mahj,0,sizeof(mahj));
+		memset(&g_mahj,0,sizeof(g_mahj));
 		mah_num = 0;
 		p = strtok(line,delim);//分割一行中的第一个数
 		if((p[0] == ' ') || (p[0] == 13) || (p[0] == 10))//屏蔽所有空格，换行。
 		{
 			continue;
 		}
-		if((mah[0] = str_to_value(p,&mahj[0])) == -1)//第0个都不合法//本行分割不成功，读取下一行
+		if((mah[0] = str_to_value(p,&g_mahj[0])) == -1)//第0个都不合法//本行分割不成功，读取下一行
 		{
 			count++;//行计数器加一
 			continue;//结束本行分割，读取下一行
@@ -87,7 +93,7 @@ int main(int argc, char *argv[])
 			{
 				continue;
 			}	
-			if((mah[mah_num] = str_to_value(p,&mahj[mah_num])) == -1)//第i个不合法
+			if((mah[mah_num] = str_to_value(p,&g_mahj[mah_num])) == -1)//第i个不合法
 			{
 				flag = 1;//本行分割不成功，读取下一行
 				break;//结束本行分割
@@ -112,8 +118,8 @@ int main(int argc, char *argv[])
 		//将要分析的十四张牌放入二维数组中 //赖子值设置为-1；
 		for(j = 0; j < pNum_1 ;j++)
 		{
-			int color = mahj[j].color;	//取的花色真值：1、2、4、8
-			int val = mahj[j].value;
+			int color = g_mahj[j].color;	//取的花色真值：1、2、4、8
+			int val = g_mahj[j].value;
 			cards[color][val].amount ++; //牌数
 			if(cards[color][val].index == 0)
 				cards[color][val].index = j;	//牌的开始索引
@@ -142,10 +148,18 @@ int main(int argc, char *argv[])
 			flag=0;
 			continue;
 		}
-		zong++; //合法的数据条数
-		sortP(mah,mahj);
-
-		checkHu(mah,mahj,cards);
+		g_zong++; //合法的数据条数
+		sortP(mah,g_mahj);
+		g_huNum = getHuNum(mah);
+		g_normalNum =  pNum - g_huNum;
+		g_getShouPai();//获取手牌
+		int n = g_split();
+		printf("chunkNum:%d\n",n);
+		if(n>5)//分块
+		{
+			printf("there is too many chunks to huPai\n");
+		}
+		checkHu(mah,g_mahj,cards);
 		printf("time:%d\n",getRunTime(0,1));
 	}
 	 printf("total huShu:%d\n",huShu);
@@ -157,7 +171,6 @@ int main(int argc, char *argv[])
        free(line);
 	}
     return EXIT_SUCCESS;
-	
 }
 
 int sortP(int mah[pNum],MAHJ mahj[pNum])
@@ -185,15 +198,87 @@ int getHuNum(int mah[])
 	return pNum - i - 1;
 }
 
+
+
+
+int sumGroup(int group[])
+{
+	return group[0]+group[1]+group[2];
+}
+
+int g_getShouPai()
+{
+	int i = 0;
+	for(i=0;i<4;i++)
+	{
+		memset(g_spai,0,sizeof(g_spai));
+		memset(g_spaiEnd,0,sizeof(g_spaiEnd));
+		memset(g_sspai,0,sizeof(g_sspai));
+		memset(g_sspaiEnd,0,sizeof(g_sspaiEnd));
+	}
+
+	for(i=0;i<g_normalNum;i++)
+	{
+		MAHJ* mahj = &(g_mahj[i]);
+		int color = mahj->color;
+		SPai *spai;
+		newStruct(&spai);
+		spai->mahj=mahj;
+		spai->next=NULL;
+		spai->prev=g_spaiEnd[color];
+		if(g_spai[color]==0)
+		{
+			g_spai[color] = spai;
+		}
+		else{
+			g_spaiEnd[color]->next = spai;
+		}
+		g_spaiEnd[color] = spai;
+	}
+	for(i=0;i<4;i++)
+	{
+		SPai *p = g_spai[i];
+		int value0 = -1;
+		while(p)
+		{
+			int value = p->mahj->value;
+			printf("---value:%d\n",value);
+			if(value!=value0)
+			{
+				SSPai *sspai;
+				newStruct(&sspai);
+				sspai->sp = p;
+				sspai->ep = p;
+				sspai->next = NULL;
+				sspai->prev = g_sspaiEnd[i];
+				if(g_sspai[i]==0)
+				{
+					g_sspai[i] = sspai;
+				}
+				else{
+					g_sspaiEnd[i]->next = sspai;
+				}
+				g_sspaiEnd[i] = sspai;
+			}
+			else
+			{
+				g_sspaiEnd[i]->ep = p;
+			}
+			value0 = value;
+			p = p->next;
+		}
+	}
+}
+
 int initRes()
 {
-	startRes = NULL;
-	endRes = startRes;
+	g_result = NULL;
+	g_resultEnd = g_result;
 }
 
 int freeRes()
 {
-	NodeRes *node = startRes;
+	NodeRes *node = g_result;
 	int i = 0;
 	while(node)
 	{
@@ -207,14 +292,14 @@ int freeRes()
 		}
 		node = nodeN;
 	}
-	startRes = NULL;
-	endRes = NULL;
+	g_result = NULL;
+	g_resultEnd = NULL;
 }
 
 int initJiang()
 {
-	jiang.mahj[0] = newMahj();
-	jiang.mahj[1] = newMahj();
+	g_jiang.mahj[0] = newMahj();
+	g_jiang.mahj[1] = newMahj();
 }
 
 int initHu()
@@ -256,369 +341,318 @@ int freeHu()
 
 int freeJiang()
 {
-	free(jiang.mahj[0]);
-	free(jiang.mahj[1]);
-	jiang.mahj[0] = NULL;
-	jiang.mahj[0] = NULL;
+	free(g_jiang.mahj[0]);
+	free(g_jiang.mahj[1]);
+	g_jiang.mahj[0] = NULL;
+	g_jiang.mahj[0] = NULL;
 }
 
-
-
-int geneMahjsRes(TreeNode *node,MAHJ *mahjs[12])
-{
-	int i = 12;
-	while(node)
-	{
-		int j = 0;
-		for(;j<3;j++)
-		{
-			i--;
-			//if(i>=0)//不加上这句会出现地址越界,然后free的时候会出现free(): invalid next size (fast)
-			{
-				mahjs[i] = node->hand->mahj[2-j]; 
-			}
-			if(i==0){
-				return 0;
-			}
-		}
-		node = node->parent;
-	}
-	return i;
-}
-
-int printRes()
-{
-	NodeRes *node = startRes;
-	printf("hupai:\n");
-	MAHJ *mahjs[12];
-	while(node){
-		if(geneMahjsRes(node->node,mahjs)==0)
-		{
-			MAHJ *hus[5];
-			int hi = 0;
-			int i;
-			for(i=0;i<12;i++)
-			{
-				printf("%d%d ",mahjs[i]->color,mahjs[i]->value+1);
-				if(mahjs[i]->isHu==1)
-				{
-					hus[hi++] = mahjs[i];
-				}
-			}
-			printf("hu: ");
-			for(i=0;i<hi;i++)
-			{
-				printf("%d%d ",hus[i]->color,hus[i]->value+1);
-			}
-			printf("\n");
-		}
-		node = node->next;
-	}
-}
-
-int saveRes(TreeNode *node,int huDui)
+int saveRes(TreeNode *node)
 {
 	huShu++;
 	NodeRes *nodeRes = (NodeRes *)malloc(sizeof(NodeRes));
 	if(nodeRes==NULL)
 		return -1;
 	TreeNode *pNode = node;
-	while(huDui-->0)
-	{
-		TreeNode *node = newTreeNode();
-		if(node==NULL)return -1;
-		node->hand = newHand();
-		int i;
-		for(i=0;i<3;i++)
-		{
-			node->hand->mahj[i] = newMahj();
-			node->hand->mahj[i]->value = 6;
-			node->hand->mahj[i]->color = 3;
-			node->hand->mahj[i]->isHu = 0;
-		}
-		pNode->child[3] = node;
-		node->parent = pNode;
-		pNode=node;
-	}
 	nodeRes->node = pNode;
 	nodeRes->next = NULL;
-	nodeRes->prev = endRes;
-	if(startRes == NULL)
+	nodeRes->prev = g_resultEnd;
+	if(g_result == NULL)
 	{
-		startRes = nodeRes;
-		endRes = nodeRes;
+		g_result = nodeRes;
 	}
 	else
 	{
-		endRes->next = nodeRes;
+		g_resultEnd ->next = nodeRes;
 	}
-	endRes = nodeRes;
+	g_resultEnd = nodeRes;
 }
 
 
-int printHu()
-{
-	printf("jiang:");
-	printf("%d%d ",jiang.mahj[0]->color,jiang.mahj[0]->value+1);
-	printf("%d%d ",jiang.mahj[1]->color,jiang.mahj[1]->value+1);
-	if(jiang.mahj[0]->isHu==1)
+int saveGu(Card cards[4][9],SPai *&spai,int group[],int &normalN,int &huNum,int &hasJiang){
+	MAHJ *mahj = spai->mahj;
+	int color = mahj->color;
+	int value = mahj->value;
+	Card card = cards[color][value];
+	int amount = card.amount;
+	if(amount == 1)
 	{
-		printf("jiangHu");
-	}
-	printf("\n");
-	printRes();
-}
-
-int checkMahNum(mah,mahj,startIndex,int normalNum)
-{
-	if(mahj[startIndex].color != mahj[startIndex+1].color)return 0;
-	if(mahj[startIndex].color == 3)
-	{
-		if(startIndex > normalNum - 1) return -1;
-		if(startIndex == normalNum - 1) return 0; 
-		if(mahj[startIndex].value != mahj[startIndex+1].value)return 0;
-		if(startIndex == noramlNum - 2) return 1;
-		if(mahj[startIndex+2].value == mahj[startIndex].value)return 2;
-	}
-	if(mahj[startIndex].value < mahj[startIndex+1].value - 2)return 0;
-	if(mahj[startIndex].value == mahj[startIndex+1].value)
-	{
-		if(mahj[startIndex+1].color != mahj[startIndex+2].color)return 1;
-		if(mahj[startIndex+1].value < mahj[startIndex+2].value - 1)return 1;
-	}
-}
-
-
-int checkMahHu(mah,mahj,startIndex,group,i)
-{
-	if(i==0)
-		return 0;
-	
-
-}
-
-int checkNormalHu(int mah[],MAHJ mahj[],int normalNum)//选完将之后剩下的怎么分配
-{
-	switch(normalNum)
-	{
-		case 12:
+		if(hasJiang == 0)
+		{
+			hasJiang = 1;
+			card.amount = 0;
+			card.index = 0;
+			normalN--;
+			huNum--;
+		}
+		else{
+			if(group[0]==0)
 			{
-				int i;
-				for(i=0;i<4;i++)
-				{
-					checkMahNum(mah,mahj,3);
-					mah = mah + 3;
-					mahj = mahj + 3;
-				}
+				return -1;
 			}
-		case 11:
+			card.amount = 0;
+			card.index = 0;
+			normalN--;
+			huNum--;
+			huNum--;
+			group[0]--;
+		}
+	}
+	else if(amount == 2)
+	{
+		if(hasJiang == 0)
+		{
+			hasJiang = 1;
+			card.amount = 0;
+			card.index = 0;
+			normalN--;
+			normalN--;
+		}
+		else{
+			if(group[1]==0)
 			{
-				int group[3] = {0,1,3};
-				int i = 4;
-				int startIndex = 0;
-				int num = checkMahNum(mah,mahj,startIndex,group,i);
-				if(num==2)
-				{
-					group[2]--;
-					int num = checkMahNum(mah,mahj,startIndex+3,group,i);
-					group[1]--;
-					int num = checkMahNum(mah,mahj,startIndex+2,group,i);
-					group[0]--;
-					int num = checkMahNum(mah,mahj,startIndex+1,group,i);
-				}
-				while(i>0)
-				{
-					int num = checkMahNum(mah,mahj,startIndex,group,i);
-					if(num==3)
-					{
-					}
-					while(num>=0)
-					{
-						if(group[num]>0)
-						{
-							int num = checkMahNum(mah,mahj,startIndex+num+1);
-						}
-						num--;
-					}
-					i--;
-				}
+				return -1;
 			}
+			card.amount = 0;
+			card.index = 0;
+			normalN--;
+			normalN--;
+			huNum--;
+			group[1]--;
+		}
+	}
+	else if(amount == 3)
+	{
+		if(group[2]==0)
+		{
+			return -1;
+		}
+		card.amount = 0;
+		card.index = 0;
+		normalN--;
+		normalN--;
+		normalN--;
+		group[2]--;
+	}
+	if(huNum<0)return -1;
+	TreeNode *node;
+	newStruct(&node);
+	HAND *hand;
+	newStruct(&hand);
+	node->hand = hand;
+	hand->type = 0;
+	hand->num = amount;
+	int i1;
+	for(i1=0;i1<amount;i1++)
+	{
+		hand->mahj[i1] = spai->mahj; 
+		deleteStruct(spai);
+	}
+	TreeNode *bnode;
+	newStruct(&bnode);
+	if(g_root==NULL)
+		g_root = bnode;
+	bnode ->child[amount-1] = node;
+	node ->parent = bnode;
+	bnode = node;
+	if(sumGroup(group)==0 && hasJiang)
+	{
+		saveRes(bnode);
 	}
 }
 
-int sumGroup(int group[])
+
+
+
+int g_split()
 {
-	return group[0]+group[1]+group[2];
+	SSPai *sspai = g_sspai[3];
+	g_chunk = NULL;
+	g_chunkEnd = NULL;
+	int chunkNum = 0;
+	while(sspai)
+	{
+		Chunk *chunk;
+		newStruct(&chunk);
+		chunk->color = sspai->sp->mahj->color;
+		chunk->si = sspai->sp->mahj->value;
+		chunk->ei = chunk->si; 
+		chunk->sp = sspai;
+		chunk->ep = sspai;
+		chunk->next = NULL;
+		chunk->prev = g_chunkEnd;
+		chunk->num = sspai->ep - sspai->sp + 1;
+		if(g_chunk==NULL)
+		{
+			g_chunk = chunk;
+		}
+		else{
+			g_chunkEnd ->next = chunk;
+		}
+		g_chunkEnd = chunk;
+		sspai = sspai->next;
+		chunkNum++;
+	}
+	int i = 0;
+	for(i=0;i<3;i++)
+	{
+		sspai = g_sspai[i];
+		int value0 = -2;
+		int num = 0;
+		while(sspai)
+		{
+			int value = sspai->sp->mahj->value;
+			printf("value0:%d,value:%d\n",value0,value);
+			num += sspai->ep - sspai->sp +1;
+			if(value - value0 > 1)
+			{
+				if(g_chunkEnd!=NULL)
+					g_chunkEnd->num = num;
+				num=0;
+				Chunk *chunk;
+				newStruct(&chunk);
+				chunk->color = sspai->sp->mahj->color;
+				chunk->si = sspai->sp->mahj->value;
+				chunk->ei = chunk->si; 
+				chunk->sp = sspai;
+				chunk->ep = sspai;
+				chunk->next = NULL;
+				chunk->prev = g_chunkEnd;
+				if(g_chunk==NULL)
+				{
+					g_chunk = chunk;
+				}
+				else{
+					g_chunkEnd ->next = chunk;
+				}
+				g_chunkEnd = chunk;
+				chunkNum++;
+			}
+			else{
+				g_chunkEnd->ep = sspai;
+				g_chunkEnd->ei = sspai->sp->mahj->value;
+			}
+			value0 = value;
+			sspai = sspai->next;
+		}
+		g_chunkEnd->num = num;
+	}
+	return chunkNum;
 }
 
-int colorIndex[4];
-int getColorIndex(MAHJ mahj[])
+int build(Card cards[4][9],int group[],int normalN,int huNum,int hasJiang)
 {
 	int i;
-
-}
-
-int findCards(Card cards[][],int group[],MAHJ mahj[],int startIndex,int normalN,int huNum,int hasJiang){
-	int i;
-	for(i=0;i<6;i++)
+	int guN = 0;//孤
+	int guDN = 0;//孤对
+	int guLN = 0;//孤连(两个相连的牌)
+	int huNumJ = huNum+1;//假定多加一个赖子,把将变成一个刻
+	int keN = 0;//刻的数
+	Chunk *pChunk = g_chunk;
+	while(pChunk)
 	{
-		Card card = cards[3][i];
-		if(card.amount==1)
+		if(pChunk->ei == pChunk->si)
+		{
+			if(pChunk->sp->sp == pChunk->sp->ep)
+				guN++;
+			if(pChunk->sp->sp == pChunk->sp->ep - 1)
+				guDN++;
+		}
+		else
+		{
+			if(pChunk->num==2)
+				guLN++;
+		}
+		pChunk=pChunk->next;
+	}
+	if(guN>2)
+		return -1;//孤的数目大于２个是不能胡的
+	if(huNum==0)
+	{
+		if(guN>0)
+			return -1;
+		if(guLN>0)
+			return -1;
+	}
+	else
+	{
+		if(guN==2)
+			return -1;
+		while(guN>0)
 		{
 			if(hasJiang == 0)
 			{
 				hasJiang = 1;
-				card.amount = 0;
-				card.index = 0;
-				startIndex++;
-				normalN--;
 				huNum--;
 			}
+			else
+				huNum-=2;
+			guN--;
+			if(huNum<0)
+				return -1;
 		}
-		else if(cards[3][i]==2)
+		while(guDN>0)
 		{
-			if(hasJiang==0)
+			if(hasJiang == 0)
 			{
 				hasJiang = 1;
-				cards[3][i]=0;
 			}
+			else
+				huNum--;
+			guDN--;
+			if(huNum<0)
+				return -1;
+		}
+		while(guLN>0)
+		{
+			huNum--;
+			guLN--;
+			if(huNum<0)
+				return -1;
 		}
 	}
+
+
+	if(hasJiang == 0)
+	{
+	}
+	pChunk = g_chunk;
+	while(pChunk)
+	{
+		if(pChunk->num==4)
+		{
+		}
+		pChunk=pChunk->next;
+	}
+
+	//孤用混配对完了
+	pChunk = g_chunk;
+	while(pChunk)
+	{
+		if(pChunk->ei == pChunk->si)
+		{
+			saveGu(cards,pChunk->sp->sp,group,normalN,huNum,hasJiang);
+			deleteStruct(pChunk);
+		}
+		else
+			pChunk=pChunk->next;
+	}
+
+	//剩下的是连顺分拆问题
+	pChunk = g_chunk;
+	while(pChunk)
+	{
+		if(pChunk->ei == pChunk->si)
+		{
+		}
+		else
+			pChunk=pChunk->next;
+	}
+	
 }
 
-int checkCards(int cards[][],int group[],MAHJ mahj[],int startIndex,int normalN)
+int checkHu(int mah[],MAHJ mahj[],Card cards[4][9])
 {
-	if(startIndex >= normalN) return -1;
-	int color = mahj[startIndex].color;
-	int value = mahj[startIndex].value;
-	if(color == 3)
-	{
-		int amount = cards[color][value];
-		if(amount)return -1;//出问题了，没有牌
-		if(group[amount-1]==0)return -1;
-		if(amount==3)
-		{
-			group[amount-1]--;
-			startIndex = startIndex+amount;
-		}else if(amount == 2)
-		{
-		}
-		group[amount-1]--;
-		cards[color][value]=0;
-		startIndex = startIndex+amount;
-		if(startIndex==normalN)
-		{
-			if(amount==1)
-			{
-			}
-		}
-		return checkCards(cards,group,mahj,startIndex,normalN);
-	}
-}
-
-
-int checkHu(int mah[],MAHJ mahj[],int cards[][])
-{
-	int huNum = getHuNum(mah);
-	printf("huNum:%d\n",huNum);
-	int norN = pNum - huNum;
-	int i = 0;
-
-	normalNum = norN-1;
-	int mahN[normalNum];
-	MAHJ mahjN[normalNum];
-	initJiang();
-
-	int res = -1;
-	switch(huNum)
-	{
-		case 0:
-			res = checkNormalHu(mahN,mahjN,normalNum);
-			break;
-		case 1:
-	}
-	//用两个赖子作将
-	if(huNum>1)
-	{
-		normalNum = norN;
-		printf("normalNum:%d\n",normalNum);
-		jiang.mahj[0]->isHu = 0;
-		jiang.mahj[1]->isHu = 0;
-		jiang.mahj[0]->value = 6;
-		jiang.mahj[0]->color = 3;
-		jiang.mahj[1]->value = 6;
-		jiang.mahj[1]->color = 3;
-		int j;
-		for(j=0;j<norN;j++)
-		{
-			mahN[j] = mah[j];
-			mahjN[j] = mahj[j];
-		}
-		initHu();
-		build(mahN,mahjN,huNum);
-		printHu();
-		freeHu();
-	}
-	for(;i<norN;i++)
-	{
-		//不用赖子作将
-		if(i<norN-1 && mah[i] == mah[i+1]){
-			normalNum = norN-2;
-			printf("normalNum:%d\n",normalNum);
-			jiang.mahj[0]->isHu = 0;
-			jiang.mahj[1]->isHu = 0;
-			jiang.mahj[0]->value = mahj[i].value;
-			jiang.mahj[0]->color = mahj[i].color;
-			jiang.mahj[1]->value = mahj[i].value;
-			jiang.mahj[1]->color = mahj[i].color;
-			int j;
-			for(j=0;j<i;j++)
-			{
-				mahN[j] = mah[j];
-				mahjN[j] = mahj[j];
-			}
-			for(j=i+2;j<norN;j++)
-			{
-				mahN[j-2] = mah[j];
-				mahjN[j-2] = mahj[j];
-			}
-			initHu();
-			build(mahN,mahjN,huNum);
-			printHu();
-			freeHu();
-			i++;
-		}else if(i>0&&mah[i]==mah[i-1]){
-			continue;
-		//用一个赖子作将
-		}else{
-			normalNum = norN-1;
-			if(huNum<1)
-			{
-				continue;
-			}
-			jiang.mahj[0]->isHu = 1;
-			jiang.mahj[0]->value = mahj[i].value;
-			jiang.mahj[0]->color = mahj[i].color;
-			jiang.mahj[1]->value = mahj[i].value;
-			jiang.mahj[1]->color = mahj[i].color;
-			int j;
-			for(j=0;j<i;j++)
-			{
-				mahN[j] = mah[j];
-				mahjN[j] = mahj[j];
-			}
-			for(j=i+1;j<norN;j++)
-			{
-				mahN[j-1] = mah[j];
-				mahjN[j-1] = mahj[j];
-			}
-			initHu();
-			build(mahN,mahjN,huNum-1);
-			printHu();
-			freeHu();
-		}
-	}
-	freeJiang();
 }
 
 TreeNode *newTreeNode()
@@ -648,157 +682,6 @@ MAHJ *newMahj()
 	return mahj;
 }
 		
-int build(int mah[],MAHJ mahj[],int huNum)
-{
-	root  = newTreeNode();
-	
-	int type = 0;
-	for(;type<4;type++) 
-		buildChild(root,mah,mahj,huNum,0,type);
-
-	return 1;
-}
-
-int buildChild(TreeNode *node,int mah[],MAHJ mahj[],int huNum,int startIndex,int type)
-{
-	MAHJ *mahj0 = &mahj[startIndex];
-	TreeNode *childNode = NULL;
-	if(type < 3)
-	{
-		if(mahj[startIndex].color == 3) return -1;
-		if(mahj[startIndex].value > 6+type )return -1;
-		if(mahj[startIndex].value < type )return -1;
-		int num = normalNum - 1 - startIndex;
-		if(num>2)num=2;
-		int minT = type;
-		if(type<2-num)
-		{
-			minT = 2-num;
-		}
-		huNum -= minT;
-		if(huNum < 0) return -1;
-		int i = 0;
-		int j = 0;
-		int k[2]={0};//是否需要混
-		for(;i<2-minT;i++)
-		{
-			if(mahj[startIndex].color == mahj[startIndex+1].color && mahj[startIndex].value == mahj[startIndex+1].value - j - 1)
-			{
-				startIndex++;
-			}
-			else{
-				k[i] = 1;
-				j++;
-				huNum --;
-				if(huNum < 0)
-					return -1;
-			}
-		}
-		HAND *hand = newHand();
-		hand->type = 1;
-		for(i=0;i<3;i++)
-		{
-			MAHJ *mahj = newMahj();
-			mahj->color = mahj0->color;
-			mahj->value = mahj0->value+i-type;
-			hand->mahj[i] = mahj;
-			hand->mahj[i]->isHu = 0;
-		}
-		for(i=0;i<2-type;i++)
-		{
-			if((k[i]==1) || (i>=num))
-			{
-				hand->mahj[type+1+i]->isHu = 1;
-			}
-		}
-		for(i=0;i<type;i++)
-		{
-			hand->mahj[i]->isHu = 1;
-		}
-		childNode = newTreeNode();
-		childNode->parent = node;
-		childNode->hand = hand;
-		node->child[type] = childNode;
-		if(startIndex == normalNum - 1) 
-		{
-			saveRes(childNode,huNum/3);
-			return 0;
-		}
-		/*
-		else if(startIndex > normalNum - 1)
-		{
-			return -1;
-		}
-		*/
-	}
-	else
-	{
-		int i = 0;
-		int j = 0;
-		//判断位置
-		int num = normalNum-1 - startIndex;
-		if(num>2)
-			num=2;
-		for(;i<num;i++)
-		{
-			if(mahj[startIndex].color == mahj[startIndex+1].color && mahj[startIndex].value == mahj[startIndex+1].value)
-			{
-				j++;
-				startIndex++;
-			}
-			else{
-				break;
-			}
-		}
-		//判断混的数目
-		huNum = huNum-2+j;
-		if(huNum < 0)
-			return -1;
-		//新建配对
-		HAND *hand = newHand();
-		hand->type = 0;
-		//复制麻将的数值
-		i = 0;
-		for(;i<3;i++)
-		{
-			MAHJ *mahj = newMahj();	
-			mahj->color = mahj0->color;
-			mahj->value = mahj0->value;
-			hand->mahj[i] = mahj;
-			if(i>j)
-			{
-				mahj->isHu = 1;
-			}
-			else{
-				mahj->isHu = 0;
-			}
-		}
-		childNode = newTreeNode();
-		childNode->parent = node;
-		childNode->hand = hand;
-		node->child[type] = childNode;
-		if(startIndex == normalNum - 1) 
-		{
-			saveRes(childNode,huNum/3);
-			return 0;
-		}
-		/*
-		else if(startIndex > normalNum - 1)//没有这个会段错误
-		{
-			return -1;
-		}
-		*/
-	}
-	if(childNode)
-	{
-		int type_ = 0;
-		for(;type_<4;type_++) 
-			buildChild(childNode,mah,mahj,huNum,startIndex+1,type_);
-	}
-}
-
-
-
 int str_to_value(char Str_Hex[],MAHJ *pMahj)//传进字符串
 {
     int i;
@@ -821,7 +704,7 @@ int str_to_value(char Str_Hex[],MAHJ *pMahj)//传进字符串
 		}
 	}
 	int color = Str_Hex[0] - '0';
-	int value = Str_Hex[1] - '1';
+	int value = Str_Hex[1] - '0';
 	if(color>4){
 		return -1;
 	}
