@@ -11,22 +11,31 @@
 #include <sys/resource.h>
 
 int g_zong=0;
-JIANG g_jiang;
-TreeNode *g_root;
-SPai *g_spai[4];
-SPai *g_spaiEnd[4];
-SSPai *g_sspai[4];
-SSPai *g_sspaiEnd[4];
-MAHJ g_mahj[pNum];
-Chunk *g_chunk=NULL;
-Chunk *g_chunkEnd=NULL;
-NodeRes *g_result=NULL;
-NodeRes *g_resultEnd=NULL;
-CUnitsSet *g_unitsSet = NULL:
-CUnitsSet *g_unitsSetEnd = NULL:
+TreeNode *g_root = NULL;
+Chunk *g_chunkS=NULL;
+Chunk *g_chunkE=NULL;
+NodeRes *g_resS=NULL;
+NodeRes *g_resE=NULL;
+CUnitsSet *g_unitsSetS = NULL;
+CUnitsSet *g_unitsSetE = NULL;
 int g_huNum = 0;
 int g_normalNum = 0;
-int g_jkN = 0;//将刻的数
+
+JIANG g_jiang;
+MAHJ g_mahj[pNum];
+SPai *g_spaiS[4];
+SPai *g_spaiE[4];
+SSPai *g_sspaiS[4];
+SSPai *g_sspaiE[4];
+int g_init()
+{
+	initJiang();
+	memset(g_mahj,0,sizeof(g_mahj));
+	memset(g_spaiS,0,sizeof(g_spaiS));
+	memset(g_spaiE,0,sizeof(g_spaiE));
+	memset(g_sspaiS,0,sizeof(g_sspaiS));
+	memset(g_sspaiE,0,sizeof(g_sspaiE));
+}
 
 struct timeval timeVal[10];
 
@@ -152,6 +161,7 @@ int main(int argc, char *argv[])
 			continue;
 		}
 		g_zong++; //合法的数据条数
+		g_init();
 		sortP(mah,g_mahj);
 		g_huNum = getHuNum(mah);
 		g_normalNum =  pNum - g_huNum;
@@ -212,63 +222,33 @@ int sumGroup(int group[])
 int g_getShouPai()
 {
 	int i = 0;
-	for(i=0;i<4;i++)
-	{
-		memset(g_spai,0,sizeof(g_spai));
-		memset(g_spaiEnd,0,sizeof(g_spaiEnd));
-		memset(g_sspai,0,sizeof(g_sspai));
-		memset(g_sspaiEnd,0,sizeof(g_sspaiEnd));
-	}
-
 	for(i=0;i<g_normalNum;i++)
 	{
 		MAHJ* mahj = &(g_mahj[i]);
 		int color = mahj ->color;
-		SPai *spai;
-		newStruct(spai);
+		SPai *spai = addStruct(g_spaiS[color],g_spaiE[color]);
 		spai ->mahj=mahj;
-		spai ->next=NULL;
-		spai ->prev=g_spaiEnd[color];
-		if(g_spai[color]==0)
-		{
-			g_spai[color] = spai;
-		}
-		else
-		{
-			g_spaiEnd[color] ->next = spai;
-		}
-		g_spaiEnd[color] = spai;
 	}
 	for(i=0;i<4;i++)
 	{
-		SPai *p = g_spai[i];
-		int value0 = -1;
+		SPai *p = g_spaiS[i];
+		int oldValue = -1;
 		while(p)
 		{
 			int value = p ->mahj ->value;
-			printf("---value:%d\n",value);
-			if(value!=value0)
+			if(value!=oldValue)
 			{
-				SSPai *sspai;
-				newStruct(sspai);
+				oldValue = value;
+				SSPai *sspai = addStruct(g_sspaiS[i],g_sspaiE[i]);
 				sspai ->sp = p;
 				sspai ->ep = p;
-				sspai ->next = NULL;
-				sspai ->prev = g_sspaiEnd[i];
-				if(g_sspai[i]==0)
-				{
-					g_sspai[i] = sspai;
-				}
-				else{
-					g_sspaiEnd[i] ->next = sspai;
-				}
-				g_sspaiEnd[i] = sspai;
+				sspai ->num = 1;
 			}
 			else
 			{
-				g_sspaiEnd[i] ->ep = p;
+				g_sspaiE[i] ->ep = p;
+				g_sspaiE[i] ->num ++;
 			}
-			value0 = value;
 			p = p ->next;
 		}
 	}
@@ -276,13 +256,13 @@ int g_getShouPai()
 
 int initRes()
 {
-	g_result = NULL;
-	g_resultEnd = g_result;
+	g_resS = NULL;
+	g_resE = g_resS;
 }
 
 int freeRes()
 {
-	NodeRes *node = g_result;
+	NodeRes *node = g_resS;
 	int i = 0;
 	while(node)
 	{
@@ -296,8 +276,8 @@ int freeRes()
 		}
 		node = nodeN;
 	}
-	g_result = NULL;
-	g_resultEnd = NULL;
+	g_resS = NULL;
+	g_resE = NULL;
 }
 
 int initJiang()
@@ -360,16 +340,16 @@ int saveRes(TreeNode *node)
 	TreeNode *pNode = node;
 	nodeRes ->node = pNode;
 	nodeRes ->next = NULL;
-	nodeRes ->prev = g_resultEnd;
-	if(g_result == NULL)
+	nodeRes ->prev = g_resE;
+	if(g_resS == NULL)
 	{
-		g_result = nodeRes;
+		g_resS = nodeRes;
 	}
 	else
 	{
-		g_resultEnd ->next = nodeRes;
+		g_resE ->next = nodeRes;
 	}
-	g_resultEnd = nodeRes;
+	g_resE = nodeRes;
 }
 
 
@@ -468,74 +448,48 @@ int saveGu(Card cards[4][9],SPai *&spai,int group[],int &normalN,int &huNum,int 
 
 
 
+
 int g_split()
 {
-	SSPai *sspai = g_sspai[3];
-	g_chunk = NULL;
-	g_chunkEnd = NULL;
+	SSPai *sspai = g_sspaiS[3];
 	int chunkNum = 0;
 	while(sspai)
 	{
-		Chunk *chunk;
-		newStruct(chunk);
+		Chunk *chunk = addStruct(g_chunkS,g_chunkE);
 		chunk ->color = sspai ->sp ->mahj ->color;
 		chunk ->si = sspai ->sp ->mahj ->value;
 		chunk ->ei = chunk ->si; 
 		chunk ->sp = sspai;
 		chunk ->ep = sspai;
-		chunk ->next = NULL;
-		chunk ->prev = g_chunkEnd;
-		chunk ->num = sspai ->ep - sspai ->sp + 1;
-		if(g_chunk==NULL)
-		{
-			g_chunk = chunk;
-		}
-		else{
-			g_chunkEnd ->next = chunk;
-		}
-		g_chunkEnd = chunk;
+		chunk ->num = sspai ->num;
 		sspai = sspai ->next;
 		chunkNum++;
 	}
 	int i = 0;
 	for(i=0;i<3;i++)
 	{
-		sspai = g_sspai[i];
-		int value0 = -2;
+		sspai = g_sspaiS[i];
+		int oldValue = -2;
 		while(sspai)
 		{
 			int value = sspai ->sp ->mahj ->value;
-			printf("value0:%d,value:%d\n",value0,value);
-			if(value - value0 > 1)
+			if(value - oldValue > 1)
 			{
-				if(g_chunkEnd!=NULL)
-				{
-					g_chunkEnd ->num = g_chunkEnd ->ep ->ep - g_chunkEnd ->sp ->sp + 1;
-				}
-				Chunk *chunk;
-				newStruct(chunk);
+				Chunk *chunk = addStruct(g_chunkS,g_chunkE);
 				chunk ->color = sspai ->sp ->mahj ->color;
 				chunk ->si = sspai ->sp ->mahj ->value;
 				chunk ->ei = chunk ->si; 
 				chunk ->sp = sspai;
 				chunk ->ep = sspai;
-				chunk ->next = NULL;
-				chunk ->prev = g_chunkEnd;
-				if(g_chunk==NULL)
-				{
-					g_chunk = chunk;
-				}
-				else{
-					g_chunkEnd ->next = chunk;
-				}
-				g_chunkEnd = chunk;
+				chunk ->num = sspai ->num;
 				chunkNum++;
 			}
 			else{
-				g_chunkEnd ->ep = sspai;
-				g_chunkEnd ->ei = sspai ->sp ->mahj ->value;
+				g_chunkE ->ep = sspai;
+				g_chunkE ->ei = sspai ->sp ->mahj ->value;
+				g_chunkE ->num += sspai->num;
 			}
-			value0 = value;
+			oldValue = value;
 			sspai = sspai ->next;
 		}
 	}
@@ -543,11 +497,11 @@ int g_split()
 }
 
 
-int addJKN()
+int addJKN(int &jkN)
 {
-	g_jkN ++;
-	g_unitsSetEnd ->cue ->g_jkN ++;
-	g_unitsSetEnd ->g_jkN ++;
+	jkN ++;
+	g_unitsSetE ->cue ->jkN ++;
+	g_unitsSetE ->jkN ++;
 }
 
 int diff(int obj[],int src[],int type,int num=9)//差分
@@ -571,7 +525,7 @@ int diff(int obj[],int src[],int type,int num=9)//差分
 	}
 }
 
-int product(int doc[],int vec1[],int vec2,int num=9)//点积
+int product(int doc[],int vec1[],int vec2[],int num=9)//点积
 {
 	memset(doc,-1,num);
 	int i;
@@ -581,16 +535,9 @@ int product(int doc[],int vec1[],int vec2,int num=9)//点积
 }
 
 
-int build(Chunk *pChunk,int huNumJ,int jkN)
+int build(Chunk *chunkS,int huNumJ,int jkN)
 {
-}
-
-int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
-{
-	int i;
-	int huNumJ = huNum+1;//假定多加一个赖子,把将变成一个刻
-	g_jkN = 0;
-	Chunk *pChunk = g_chunk;
+	Chunk *pChunk = chunkS;
 	while(pChunk)
 	{
 		if(pChunk ->ei == pChunk ->si)
@@ -598,12 +545,12 @@ int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
 			if(pChunk ->num==1 || pChunk ->num==4)
 			{
 				huNumJ-=2;
-				g_jkN++;
+				jkN++;
 			}
 			if(pChunk ->num==2)
 			{
 				huNumJ-=1;
-				g_jkN++;
+				jkN++;
 			}
 		}
 		else
@@ -615,12 +562,11 @@ int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
 	}
 	if(huNumJ < 0)
 		return -1;
-	if(huNumJ==0 && g_jkN == 0)
+	if(huNumJ==0 && jkN == 0)
 		return -1;
 
-
 	int hj1 = huNumJ;
-	pChunk = g_chunk;
+	pChunk = chunkS;
 	while(pChunk)
 	{
 		int num = pChunk ->num;
@@ -643,8 +589,7 @@ int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
 
 
 	int addGu = 0;
-	//孤用混配对完了
-	pChunk = g_chunk;
+	pChunk = chunkS;
 	while(pChunk)
 	{
 		int isGu = 0;
@@ -667,15 +612,16 @@ int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
 		{
 			if(addGu == 0)
 			{
-				addStruct(g_unitsSet,g_unitsSetEnd);
-				addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+				addGu = 1;
+				addStruct(g_unitsSetS,g_unitsSetE);
+				addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 			}
-			CUnits *cu = g_unitsSetEnd ->cue;
+			CUnits *cu = g_unitsSetE ->cue;
 			Unit *u = addStruct(cu ->us,cu ->ue);
 			if(isGu == 1)
 			{
 				u ->type = pChunk ->num%3 - 1;
-				u ->sp[0] = pChunk ->sp ->sp;
+				u ->sp = pChunk ->sp ->sp;
 			}
 			else
 			{
@@ -687,7 +633,7 @@ int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
 	}
 
 	huNumJ = hj1;//还原为之前的混数，再重新检测
-	pChunk = g_chunk;
+	pChunk = chunkS;
 	//剩下的是连顺分拆问题
 	while(pChunk)
 	{
@@ -712,11 +658,11 @@ int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
 		{
 			s_value[i] = ssp ->sp ->mahj ->value;
 			s_num[i] = 1;
-			SPai *sp = ssp->sp;
-			while(sp != ssp->ep)
+			SPai *sp = ssp ->sp;
+			while(sp != ssp ->ep)
 			{
 				s_num[i] ++;
-				sp = sp->next;
+				sp = sp ->next;
 			}
 			i++;
 			ssp = ssp ->next;
@@ -753,42 +699,42 @@ int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
 				huNumJ -= 3;
 				if(huNumJ < 0)
 					return -1;
-				addStruct(g_unitsSet,g_unitsSetEnd);
+				addStruct(g_unitsSetS,g_unitsSetE);
 				{
-					addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+					addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 					{
-						Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 						u ->type = 0;
-						u ->sp = pChunk->sp->sp;
-						addJKN();
+						u ->sp = pChunk ->sp ->sp;
+						addJKN(jkN);
 					}
 					{
-						Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 						u ->type = s_value[2] - s_value[1] + 1;
-						u ->sp = pChunk->sp->next;
-						if(u->type <2)
-							addJKN();
+						u ->sp = pChunk ->sp ->sp ->next;
+						if(u ->type <2)
+							addJKN(jkN);
 					}
 				}
 				{
-					addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+					addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 					{
-						Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 						u ->type = 0;
-						u ->sp = pChunk->ep->sp;
-						addJKN();
+						u ->sp = pChunk ->ep ->sp;
+						addJKN(jkN);
 					}
 					{
-						Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 						u ->type = s_value[1] - s_value[0] + 1;
-						u ->sp = pChunk->sp->sp;
-						if(u->type <2)
-							addJKN();
+						u ->sp = pChunk ->sp ->sp;
+						if(u ->type <2)
+							addJKN(jkN);
 					}
 				}
 
 			}
-			if(huNumJ == 0 && g_jkN == 0)
+			if(huNumJ == 0 && jkN == 0)
 			{
 				return -1;
 			}
@@ -801,42 +747,42 @@ int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
 			{
 				return -1;
 			}
-			addStruct(g_unitsSet,g_unitsSetEnd);
+			addStruct(g_unitsSetS,g_unitsSetE);
 			{
-				addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+				addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 				{
-					Unit *uL = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+					Unit *uL = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 					uL ->type = value[1] + 1;
-					if(uL->type < 2)
-						addJKN();
-					uL ->sp = pChuck ->sp ->sp;
+					if(uL ->type < 2)
+						addJKN(jkN);
+					uL ->sp = pChunk ->sp ->sp;
 				}
 				{
-					Unit *uL = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+					Unit *uL = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 					uL ->type = value[3] - value[2] + 1;
-					if(uL->type < 2)
-						addJKN();
-					uL ->sp = pChuck ->sp ->sp;
+					if(uL ->type < 2)
+						addJKN(jkN);
+					uL ->sp = pChunk ->sp ->sp;
 				}
 			}
 			if(s_num[0] == 3 || s_num[0] == 4)
 			{
-				addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+				addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 				{
-					Unit *uG = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+					Unit *uG = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 					uG ->type = 0;
-					uG ->sp = pChuck ->ep ->sp;
-					addJKN();
+					uG ->sp = pChunk ->ep ->sp;
+					addJKN(jkN);
 				}
 			}
 			else if(s_num[1] == 3)
 			{
-				addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+				addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 				{
-					Unit *uG = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+					Unit *uG = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 					uG ->type = 0;
-					uG ->sp = pChuck ->sp ->sp;
-					addJKN();
+					uG ->sp = pChunk ->sp ->sp;
+					addJKN(jkN);
 				}
 			}
 			else
@@ -862,30 +808,30 @@ int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
 						}
 						SSPai *ssp = pChunk ->sp;
 						while(guIndex-- > 0)
-							ssp = ssp->next; 
-						addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+							ssp = ssp ->next; 
+						addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 						{
-							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+							Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 							u ->type = 0;
 							u ->sp = ssp ->sp;
-							addJKN();
+							addJKN(jkN);
 						}
 					}
 				}
 
 				if(sspN==2)
 				{
-					addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+					addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 					{
-						Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 						u ->type = value[2] + 1;
-						u ->sp = pChuck ->sp ->sp;
+						u ->sp = pChunk ->sp ->sp;
 					}
 				}
 			}
 
 
-			if(huNumJ == 0 && g_jkN == 0)
+			if(huNumJ == 0 && jkN == 0)
 			{
 				return -1;
 			}
@@ -898,24 +844,24 @@ int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
 			{
 				return -1;
 			}
-			addStruct(g_unitsSet,g_unitsSetEnd);
+			addStruct(g_unitsSetS,g_unitsSetE);
 			if(s_num[0] == 3 || s_num[0] == 4)
 			{
-				addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
-				Unit *u= addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-				u->type = value[4] - value[3]+1;
-				u->sp = pChuck ->ep ->sp ->prev;
-				if(u->type < 2)
-					addJKN();
+				addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
+				Unit *u= addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
+				u ->type = value[4] - value[3]+1;
+				u ->sp = pChunk ->ep ->sp ->prev;
+				if(u ->type < 2)
+					addJKN(jkN);
 			}
 			else if(s_num[2] == 3 || s_num[1] == 4)
 			{
-				addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
-				Unit *u= addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-				u->type = value[1]+1;
-				u->sp = pChuck ->sp ->sp;
-				if(u->type < 2)
-					addJKN();
+				addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
+				Unit *u= addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
+				u ->type = value[1]+1;
+				u ->sp = pChunk ->sp ->sp;
+				if(u ->type < 2)
+					addJKN(jkN);
 			}
 			else if(s_num[1] == 3)
 			{
@@ -924,23 +870,23 @@ int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
 					huNumJ -= 3;
 					if(huNumJ < 0)
 						return -1;
-					addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+					addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 					{
 						SSPai *ssp = pChunk ->sp;
-						Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 						u ->type = 0;
 						u ->sp = ssp ->sp;
-						addJKN();
+						addJKN(jkN);
 					}
 					{
 						SSPai *ssp = pChunk ->sp;
 						int gi = 2;
 						while(gi-- > 0)
-							ssp = ssp->next; 
-						Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+							ssp = ssp ->next; 
+						Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 						u ->type = 0;
 						u ->sp = ssp ->sp;
-						addJKN();
+						addJKN(jkN);
 					}
 				}
 			}
@@ -980,14 +926,14 @@ int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
 							SSPai *ssp = pChunk ->sp;
 							int gi = guIndex[0];
 							while(gi-- > 0)
-								ssp = ssp->next; 
-							addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+								ssp = ssp ->next; 
+							addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 							{
-								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-								u ->type = s_value(guIndex[1]) - s_value(guIndex[0]) + 1;
+								Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
+								u ->type = s_value[guIndex[1]]- s_value[guIndex[0]] + 1;
 								u ->sp = ssp ->sp;
-								if(u->type<2)
-									addJKN();
+								if(u ->type<2)
+									addJKN(jkN);
 							}
 						}
 						else
@@ -995,156 +941,156 @@ int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
 							huNumJ -= 3;
 							if(huNumJ < 0)
 								return -1;
-							addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+							addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 							{
 								SSPai *ssp = pChunk ->sp;
 								int gi = guIndex[0];
 								while(gi-- > 0)
-									ssp = ssp->next; 
-								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									ssp = ssp ->next; 
+								Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 								u ->type = 0;
 								u ->sp = ssp ->sp;
-								addJKN();
+								addJKN(jkN);
 							}
 							{
 								SSPai *ssp = pChunk ->sp;
 								int gi = guIndex[1];
 								while(gi-- > 0)
-									ssp = ssp->next; 
-								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									ssp = ssp ->next; 
+								Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 								u ->type = 0;
 								u ->sp = ssp ->sp;
-								addJKN();
+								addJKN(jkN);
 							}
 						}
 					}
 				}
 				if(hasShun == 0)
 				{
-					SPai *sp = pChunk->sp->sp;
+					SPai *sp = pChunk ->sp ->sp;
 					//中间为孤
 					{
-						addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+						addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 						{
-							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+							Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 							u ->type = 0;
-							u ->sp = sp->next->next;
-							addJKN();
+							u ->sp = sp ->next ->next;
+							addJKN(jkN);
 						}
 						{
-							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+							Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 							u ->type = value[1] + 1;
 							u ->sp = sp;
-							if(u->type <2)
-								addJKN();
+							if(u ->type <2)
+								addJKN(jkN);
 						}
 						{
-							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+							Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 							u ->type = value[4] - value[3] + 1;
 							u ->sp = sp;
-							if(u->type <2)
-								addJKN();
+							if(u ->type <2)
+								addJKN(jkN);
 						}
 					}
 					//右边为孤
 					{
-						addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+						addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 						{
-							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+							Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 							u ->type = 0;
-							u ->sp = sp->next->next->next->next;
-							addJKN();
+							u ->sp = sp ->next ->next ->next ->next;
+							addJKN(jkN);
 						}
 						{
-							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+							Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 							u ->type = value[1] - value[0] + 1;
 							u ->sp = sp;
-							if(u->type <2)
-								addJKN();
+							if(u ->type <2)
+								addJKN(jkN);
 						}
 						{
-							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+							Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 							u ->type = value[3] - value[2] + 1;
 							u ->sp = sp;
-							if(u->type <2)
-								addJKN();
+							if(u ->type <2)
+								addJKN(jkN);
 						}
 						if(value[3] - value[1] < 3 && value[2] - value[0] < 3)
 						{
-							addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+							addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 							{
-								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 								u ->type = 0;
-								u ->sp = sp->next->next->next->next;
-								addJKN();
+								u ->sp = sp ->next ->next ->next ->next;
+								addJKN(jkN);
 							}
 							{
-								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 								u ->type = value[3] - value[1] + 1;
 								u ->sp = sp;
-								if(u->type <2)
-									addJKN();
+								if(u ->type <2)
+									addJKN(jkN);
 							}
 							{
-								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 								u ->type = value[2] - value[0] + 1;
 								u ->sp = sp;
-								if(u->type <2)
-									addJKN();
+								if(u ->type <2)
+									addJKN(jkN);
 							}
 						}
 					}
 					//左边为孤
 					{
-						addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+						addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 						{
-							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+							Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 							u ->type = 0;
 							u ->sp = sp;
-							addJKN();
+							addJKN(jkN);
 						}
 						{
-							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+							Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 							u ->type = value[2] - value[1] + 1;
 							u ->sp = sp;
-							if(u->type <2)
-								addJKN();
+							if(u ->type <2)
+								addJKN(jkN);
 						}
 						{
-							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+							Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 							u ->type = value[4] - value[3] + 1;
 							u ->sp = sp;
-							if(u->type <2)
-								addJKN();
+							if(u ->type <2)
+								addJKN(jkN);
 						}
 						if(value[2] - value[1] < 3 && value[4] - value[3] < 3)
 						{
-							addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+							addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 							{
-								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 								u ->type = 0;
 								u ->sp = sp;
-								addJKN();
+								addJKN(jkN);
 							}
 							{
-								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 								u ->type = value[2] - value[1] + 1;
 								u ->sp = sp;
-								if(u->type <2)
-									addJKN();
+								if(u ->type <2)
+									addJKN(jkN);
 							}
 							{
-								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 								u ->type = value[4] - value[3] + 1;
 								u ->sp = sp;
-								if(u->type <2)
-									addJKN();
+								if(u ->type <2)
+									addJKN(jkN);
 							}
 						}
 					}
 				}
 			}
-			if(huNumJ == 0 && g_jkN == 0)
+			if(huNumJ == 0 && jkN == 0)
 			{
 				return -1;
 			}
@@ -1188,33 +1134,33 @@ int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
 						if(s_num[i] == 4)
 						{
 							oneKe = 1;
-							addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+							addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 							{
-								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 								u ->type = 0;
-								u ->sp = pChunk->sp->sp;
-								addJKN();
+								u ->sp = pChunk ->sp ->sp;
+								addJKN(jkN);
 							}
 							{
-								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 								u ->type = value[2] - value[1] + 1;
-								u ->sp = pChunk->sp->next->sp;
-								if(u->type <2)
-									addJKN();
+								u ->sp = pChunk ->sp ->next ->sp;
+								if(u ->type <2)
+									addJKN(jkN);
 							}
-							addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+							addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 							{
-								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 								u ->type = 0;
-								u ->sp = pChunk->ep->sp;
-								addJKN();
+								u ->sp = pChunk ->ep ->sp;
+								addJKN(jkN);
 							}
 							{
-								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 								u ->type = s_value[1] - s_value[0] + 1;
-								u ->sp = pChunk->sp->sp;
-								if(u->type <2)
-									addJKN();
+								u ->sp = pChunk ->sp ->sp;
+								if(u ->type <2)
+									addJKN(jkN);
 							}
 						}
 						else if(s_num[i] == 3)
@@ -1222,98 +1168,98 @@ int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
 							oneKe = 1;
 							if(i==0)
 							{
-								addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+								addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 								{
-									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 									u ->type = 0;
-									u ->sp = pChunk->sp->next->sp;
-									addJKN();
+									u ->sp = pChunk ->sp ->next ->sp;
+									addJKN(jkN);
 								}
 								{
-									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 									u ->type = s_value[3] - s_value[2] + 1;
-									u ->sp = pChunk->ep->prev->sp;
-									if(u->type <2)
-										addJKN();
+									u ->sp = pChunk ->ep ->prev ->sp;
+									if(u ->type <2)
+										addJKN(jkN);
 								}
-								addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+								addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 								{
-									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 									u ->type = 0;
-									u ->sp = pChunk->ep->sp;
-									addJKN();
+									u ->sp = pChunk ->ep ->sp;
+									addJKN(jkN);
 								}
 								{
-									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 									u ->type = s_value[2] - s_value[1] + 1;
-									u ->sp = pChunk->sp->next->sp;
-									if(u->type <2)
-										addJKN();
+									u ->sp = pChunk ->sp ->next ->sp;
+									if(u ->type <2)
+										addJKN(jkN);
 								}
 							}
 							else if(i==1)
 							{
-								addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+								addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 								{
-									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 									u ->type = 0;
-									u ->sp = pChunk->sp->sp;
-									addJKN();
+									u ->sp = pChunk ->sp ->sp;
+									addJKN(jkN);
 								}
 								{
-									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 									u ->type = s_value[3] - s_value[1] + 1;
-									u ->sp = pChunk->ep->prev->sp;
-									if(u->type <2)
-										addJKN();
+									u ->sp = pChunk ->ep ->prev ->sp;
+									if(u ->type <2)
+										addJKN(jkN);
 								}
 							}
 							else if(i==2)
 							{
-								addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+								addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 								{
-									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 									u ->type = 0;
-									u ->sp = pChunk->ep->sp;
-									addJKN();
+									u ->sp = pChunk ->ep ->sp;
+									addJKN(jkN);
 								}
 								{
-									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 									u ->type = s_value[1] - s_value[0] + 1;
-									u ->sp = pChunk->sp->sp;
-									if(u->type <2)
-										addJKN();
+									u ->sp = pChunk ->sp ->sp;
+									if(u ->type <2)
+										addJKN(jkN);
 								}
 							}
 							else if(i==3)
 							{
-								addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+								addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 								{
-									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 									u ->type = 0;
-									u ->sp = pChunk->sp->sp;
-									addJKN();
+									u ->sp = pChunk ->sp ->sp;
+									addJKN(jkN);
 								}
 								{
-									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 									u ->type = s_value[2] - s_value[1] + 1;
-									u ->sp = pChunk->sp->next->sp;
-									if(u->type <2)
-										addJKN();
+									u ->sp = pChunk ->sp ->next ->sp;
+									if(u ->type <2)
+										addJKN(jkN);
 								}
-								addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+								addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 								{
-									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 									u ->type = 0;
-									u ->sp = pChunk->ep->prev->sp;
-									addJKN();
+									u ->sp = pChunk ->ep ->prev ->sp;
+									addJKN(jkN);
 								}
 								{
-									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 									u ->type = s_value[1] - s_value[0] + 1;
-									u ->sp = pChunk->sp->sp;
-									if(u->type <2)
-										addJKN();
+									u ->sp = pChunk ->sp ->sp;
+									if(u ->type <2)
+										addJKN(jkN);
 								}
 							}
 						}
@@ -1322,12 +1268,12 @@ int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
 					if(oneKe == 0)
 					{
 						int i;
+						int snc[9];
 						for(i=0;i<4;i++)
 						{
 							if(dsv[i] == 1 && ddsv[i] == 0)
 							{
 								oneShun = 1;
-								int snc[9];
 								diff(snc,s_num,0);
 								snc[i] --;
 								snc[i+1] --;
@@ -1338,7 +1284,7 @@ int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
 						{
 							SPNCL *spncl = NULL;
 							newStruct(spncl);
-							SSPai *ssp = pChunk->sp;
+							SSPai *ssp = pChunk ->sp;
 							int cn = 0;
 							for(i=0;i<sspN;i++)
 							{
@@ -1346,10 +1292,10 @@ int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
 								{
 									if(i==0 || s_value[i] - s_value[i-1] > 2)
 									{
-										addStruct(spncl->cs,spncl->ce);
+										addStruct(spncl ->cs,spncl ->ce);
 										cn++;
 									}
-									SPaiNum *spn = addStruct(spncl->ce->ns,spncl->ce->ne);
+									SPaiNum *spn = addStruct(spncl ->ce ->ns,spncl ->ce ->ne);
 									spn ->sp = ssp ->sp;
 									spn ->num = snc[i]; 
 									ssp = ssp ->next;
@@ -1360,19 +1306,19 @@ int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
 							SPNC *spnc = spncl ->cs;
 							if(cn==1)
 							{
-								addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+								addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
 								{
-									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 									u ->type = 0;
-									u ->sp = spnc->ns->sp;
-									addJKN();
+									u ->sp = spnc ->ns ->sp;
+									addJKN(jkN);
 								}
 								{
-									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
 									u ->type = s_value[1] - s_value[0] + 1;
-									u ->sp = spnc->n;
-									if(u->type <2)
-										addJKN();
+									u ->sp = spnc ->ns ->sp;
+									if(u ->type <2)
+										addJKN(jkN);
 								}
 							}
 							else//cn==2
@@ -1388,6 +1334,13 @@ int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
 			pChunk=pChunk ->next;
 		}
 	}
+}
+
+int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
+{
+	int i;
+	int huNumJ = huNum+1;//假定多加一个赖子,把将变成一个刻
+	build(g_chunkS,huNumJ,0);
 }
 
 int checkHu(int mah[],MAHJ mahj[],Card cards[4][9])
