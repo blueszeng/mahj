@@ -571,7 +571,21 @@ int diff(int obj[],int src[],int type,int num=9)//差分
 	}
 }
 
-int build(Card cards[4][9],int group[],int normalN,int huNum,int hasJiang)
+int product(int doc[],int vec1[],int vec2,int num=9)//点积
+{
+	memset(doc,-1,num);
+	int i;
+	for(i=0;i<num;i++)
+		doc[i] = vec1[i] * vec2[i];
+	return 1;
+}
+
+
+int build(Chunk *pChunk,int huNumJ,int jkN)
+{
+}
+
+int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
 {
 	int i;
 	int huNumJ = huNum+1;//假定多加一个赖子,把将变成一个刻
@@ -697,7 +711,13 @@ int build(Card cards[4][9],int group[],int normalN,int huNum,int hasJiang)
 		while(ssp)
 		{
 			s_value[i] = ssp ->sp ->mahj ->value;
-			s_num[i] = ssp ->ep - ssp ->sp + 1;
+			s_num[i] = 1;
+			SPai *sp = ssp->sp;
+			while(sp != ssp->ep)
+			{
+				s_num[i] ++;
+				sp = sp->next;
+			}
 			i++;
 			ssp = ssp ->next;
 		}
@@ -733,214 +753,41 @@ int build(Card cards[4][9],int group[],int normalN,int huNum,int hasJiang)
 				huNumJ -= 3;
 				if(huNumJ < 0)
 					return -1;
-				if(sspN==2)//对+1
-				{
-					addStruct(g_unitsSet,g_unitsSetEnd);
-					{
-						addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
-						Unit *uD = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-						uD ->type = 1;
-						Unit *uG = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-						uG ->type = 0;
-						if(s_num[0] == 2)
-						{
-							uD ->sp = pChunk ->sp ->sp; 
-							uG ->sp = pChunk ->ep ->sp;
-						}
-						else
-						{
-							uD ->sp = pChunk ->ep ->sp;
-							uG ->sp = pChunk ->sp ->sp;
-						}
-						addJKN();
-					}
-
-					{
-						addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
-						Unit *uL = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-						uL ->type = s_value[1] + 1;
-						uL ->sp = pChunk ->sp ->sp; 
-						Unit *uG = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-						uG ->type = 0;
-						if(s_num[0] == 2)
-						{
-							uG ->sp = pChunk ->sp ->sp;
-						}
-						else
-						{
-							uG ->sp = pChunk ->ep ->sp;
-						}
-						addJKN();
-					}
-
-				}
-				else
-				{
-					addStruct(g_unitsSet,g_unitsSetEnd);
-
-					{
-						addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
-						Unit *uL = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-						uL ->type = s_value[1] + 1;
-						uL ->sp = pChuck ->sp ->sp;
-						Unit *uG = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-						uG ->type = 0;
-						uG ->sp = pChuck ->ep ->sp;
-						addJKN();
-					}
-
-					{
-						addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
-						Unit *uL = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-						uL ->type = s_value[2] + 1;
-						uL ->sp = pChuck ->sp ->next ->sp;
-						Unit *uG = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-						uG ->type = 0;
-						uG ->sp = pChuck ->sp ->sp;
-						addJKN();
-					}
-				}
-			}
-			if(huNumJ == 0 && g_jkN == 0)
-			{
-				return -1;
-			}
-			deleteStruct(pChunk);
-		}
-		else if(num==4)
-		{
-			huNumJ -= 2;
-			if(huNumJ < 0)
-			{
-				return -1;
-			}
-			if(dis==1)//一扛
-			{
-				addStruct(g_unitsSet,g_unitsSetEnd);
-
-				{
-					addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
-					Unit *uG = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-					uG ->type = 0;
-					uG ->sp = pChuck ->sp ->sp;
-					addJKN();
-				}
-
-			}
-			else if(dis==4 && sspN==4)//四顺1234
-			{
-				addStruct(g_unitsSet,g_unitsSetEnd);
-
-				{
-					addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
-					Unit *uG = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-					uG ->type = 0;
-					uG ->sp = pChuck ->sp ->sp;
-					addJKN();
-				}
-
-				{
-					addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
-					Unit *uG = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-					uG ->type = 0;
-					uG ->sp = pChuck ->ep ->sp;
-					addJKN();
-				}
-			}
-			else
-			{
 				addStruct(g_unitsSet,g_unitsSetEnd);
 				{
 					addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
 					{
-						Unit *uL = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-						uL ->type = value[1] + 1;
-						if(uL->type < 2)
+						Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						u ->type = 0;
+						u ->sp = pChunk->sp->sp;
+						addJKN();
+					}
+					{
+						Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						u ->type = s_value[2] - s_value[1] + 1;
+						u ->sp = pChunk->sp->next;
+						if(u->type <2)
 							addJKN();
-						uL ->sp = pChuck ->sp ->sp;
+					}
+				}
+				{
+					addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+					{
+						Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						u ->type = 0;
+						u ->sp = pChunk->ep->sp;
+						addJKN();
 					}
 					{
-						Unit *uL = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-						uL ->type = value[3] + 1;
-						if(uL->type < 2)
+						Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						u ->type = s_value[1] - s_value[0] + 1;
+						u ->sp = pChunk->sp->sp;
+						if(u->type <2)
 							addJKN();
-						uL ->sp = pChuck ->sp ->sp;
 					}
 				}
-				if(sspN == 2)
-				{
-					if(value[1] == value[2])//刻+1
-					{
-						if(value[1] == 0)//刻在前
-						{
-							addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
-							{
-								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-								u ->type = 0;
-								addJKN();
-								u ->sp = pChuck ->ep ->sp;
-							}
-						}
-						else//刻在后
-						{
-							addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
-							{
-								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-								u ->type = 0;
-								addJKN();
-								u ->sp = pChuck ->sp ->sp;
-							}
-						}
-					}
-					else//对+对
-					{
-						addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
-						{
-							//两个连完全一样,只用添加一个连,因为没有另增胡牌
-							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-							u ->type = value[3];
-							u ->sp = pChuck ->sp ->sp;
-						}
-					}
-				}
-				else
-				{
-					int i;
-					int guIndex = -1; 
-					int shunIndex = -1;
-					int snc[4];
-					for(i=0;i<4;i++)
-					{
-						if(dsv[i] == 1 && ddsv[i] == 0)
-							shunIndex = i;
-					}
-					if(haveShun)
-					{
-						for(i=0;i<4;i++)
-						{
-							if(snc[i] == 1)
-							{
-								gnIndex = i;
-								break;
-							}
-						}
-					}
-					if(guIndex >= 0)
-					{
-						SSPai *ssp = pChunk ->sp;
-						while(guIndex-- > 0)
-							ssp = ssp->next; 
-						addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
-						{
-							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-							u ->type = 0;
-							u ->sp = ssp ->sp;
-						}
-					}
-				}
+
 			}
-
-
 			if(huNumJ == 0 && g_jkN == 0)
 			{
 				return -1;
@@ -972,19 +819,7 @@ int build(Card cards[4][9],int group[],int normalN,int huNum,int hasJiang)
 					uL ->sp = pChuck ->sp ->sp;
 				}
 			}
-			if(dis==1)
-			{
-				addStruct(g_unitsSet,g_unitsSetEnd);
-				{
-					addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
-					Unit *uG = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-					uG ->type = 0;
-					uG ->sp = pChuck ->sp ->sp;
-					addJKN();
-				}
-
-			}
-			else if(s_num[0] == 3)
+			if(s_num[0] == 3 || s_num[0] == 4)
 			{
 				addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
 				{
@@ -1017,11 +852,11 @@ int build(Card cards[4][9],int group[],int normalN,int huNum,int hasJiang)
 						snc[i+2] --;
 						int guIndex = -1; 
 						int j;
-						for(j=0;i<4;i++)
+						for(j=0;j<4;j++)
 						{
 							if(snc[j] == 1)
 							{
-								gnIndex = j;
+								guIndex = j;
 								break;
 							}
 						}
@@ -1033,6 +868,7 @@ int build(Card cards[4][9],int group[],int normalN,int huNum,int hasJiang)
 							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
 							u ->type = 0;
 							u ->sp = ssp ->sp;
+							addJKN();
 						}
 					}
 				}
@@ -1063,7 +899,7 @@ int build(Card cards[4][9],int group[],int normalN,int huNum,int hasJiang)
 				return -1;
 			}
 			addStruct(g_unitsSet,g_unitsSetEnd);
-			if(s_num[0] == 3)
+			if(s_num[0] == 3 || s_num[0] == 4)
 			{
 				addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
 				Unit *u= addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
@@ -1072,7 +908,7 @@ int build(Card cards[4][9],int group[],int normalN,int huNum,int hasJiang)
 				if(u->type < 2)
 					addJKN();
 			}
-			if(s_num[2] == 3)
+			else if(s_num[2] == 3 || s_num[1] == 4)
 			{
 				addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
 				Unit *u= addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
@@ -1081,12 +917,231 @@ int build(Card cards[4][9],int group[],int normalN,int huNum,int hasJiang)
 				if(u->type < 2)
 					addJKN();
 			}
-			int i = 0;
-			for(;i<3;i++)
+			else if(s_num[1] == 3)
 			{
-				if(dsv[i] == 1 && ddsv[i] == 0)
+				if(s_value[2] > 2)
 				{
-					
+					huNumJ -= 3;
+					if(huNumJ < 0)
+						return -1;
+					addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+					{
+						SSPai *ssp = pChunk ->sp;
+						Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						u ->type = 0;
+						u ->sp = ssp ->sp;
+						addJKN();
+					}
+					{
+						SSPai *ssp = pChunk ->sp;
+						int gi = 2;
+						while(gi-- > 0)
+							ssp = ssp->next; 
+						Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						u ->type = 0;
+						u ->sp = ssp ->sp;
+						addJKN();
+					}
+				}
+			}
+			else
+			{
+				int hasShun = 0;
+				int i = 0;
+				for(;i<3;i++)
+				{
+					if(dsv[i] == 1 && ddsv[i] == 0)
+					{
+						hasShun = 1;
+						int snc[5];
+						diff(snc,s_num,0,5);
+						snc[i] --;
+						snc[i+1] --;
+						snc[i+2] --;
+						int guIndex[2];
+						int j;
+						int k = 0;
+						for(j=0;j<5;j++)
+						{
+							if(snc[j] == 2)
+							{
+								guIndex[0] = j;
+								guIndex[1] = j;
+								break;
+							}
+							else if(snc[j] == 1)
+							{
+								guIndex[k++] = j;
+								continue;
+							}
+						}
+						if(guIndex[1] - guIndex[0] <3)
+						{
+							SSPai *ssp = pChunk ->sp;
+							int gi = guIndex[0];
+							while(gi-- > 0)
+								ssp = ssp->next; 
+							addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+							{
+								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								u ->type = s_value(guIndex[1]) - s_value(guIndex[0]) + 1;
+								u ->sp = ssp ->sp;
+								if(u->type<2)
+									addJKN();
+							}
+						}
+						else
+						{
+							huNumJ -= 3;
+							if(huNumJ < 0)
+								return -1;
+							addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+							{
+								SSPai *ssp = pChunk ->sp;
+								int gi = guIndex[0];
+								while(gi-- > 0)
+									ssp = ssp->next; 
+								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								u ->type = 0;
+								u ->sp = ssp ->sp;
+								addJKN();
+							}
+							{
+								SSPai *ssp = pChunk ->sp;
+								int gi = guIndex[1];
+								while(gi-- > 0)
+									ssp = ssp->next; 
+								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								u ->type = 0;
+								u ->sp = ssp ->sp;
+								addJKN();
+							}
+						}
+					}
+				}
+				if(hasShun == 0)
+				{
+					SPai *sp = pChunk->sp->sp;
+					//中间为孤
+					{
+						addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+						{
+							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+							u ->type = 0;
+							u ->sp = sp->next->next;
+							addJKN();
+						}
+						{
+							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+							u ->type = value[1] + 1;
+							u ->sp = sp;
+							if(u->type <2)
+								addJKN();
+						}
+						{
+							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+							u ->type = value[4] - value[3] + 1;
+							u ->sp = sp;
+							if(u->type <2)
+								addJKN();
+						}
+					}
+					//右边为孤
+					{
+						addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+						{
+							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+							u ->type = 0;
+							u ->sp = sp->next->next->next->next;
+							addJKN();
+						}
+						{
+							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+							u ->type = value[1] - value[0] + 1;
+							u ->sp = sp;
+							if(u->type <2)
+								addJKN();
+						}
+						{
+							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+							u ->type = value[3] - value[2] + 1;
+							u ->sp = sp;
+							if(u->type <2)
+								addJKN();
+						}
+						if(value[3] - value[1] < 3 && value[2] - value[0] < 3)
+						{
+							addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+							{
+								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								u ->type = 0;
+								u ->sp = sp->next->next->next->next;
+								addJKN();
+							}
+							{
+								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								u ->type = value[3] - value[1] + 1;
+								u ->sp = sp;
+								if(u->type <2)
+									addJKN();
+							}
+							{
+								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								u ->type = value[2] - value[0] + 1;
+								u ->sp = sp;
+								if(u->type <2)
+									addJKN();
+							}
+						}
+					}
+					//左边为孤
+					{
+						addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+						{
+							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+							u ->type = 0;
+							u ->sp = sp;
+							addJKN();
+						}
+						{
+							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+							u ->type = value[2] - value[1] + 1;
+							u ->sp = sp;
+							if(u->type <2)
+								addJKN();
+						}
+						{
+							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+							u ->type = value[4] - value[3] + 1;
+							u ->sp = sp;
+							if(u->type <2)
+								addJKN();
+						}
+						if(value[2] - value[1] < 3 && value[4] - value[3] < 3)
+						{
+							addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+							{
+								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								u ->type = 0;
+								u ->sp = sp;
+								addJKN();
+							}
+							{
+								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								u ->type = value[2] - value[1] + 1;
+								u ->sp = sp;
+								if(u->type <2)
+									addJKN();
+							}
+							{
+								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								u ->type = value[4] - value[3] + 1;
+								u ->sp = sp;
+								if(u->type <2)
+									addJKN();
+							}
+						}
+					}
 				}
 			}
 			if(huNumJ == 0 && g_jkN == 0)
@@ -1095,13 +1150,244 @@ int build(Card cards[4][9],int group[],int normalN,int huNum,int hasJiang)
 			}
 			deleteStruct(pChunk);
 		}
+		else if(num == 6)
+		{
+			if(s_num[0] == 3 && s_num[1] == 3)
+			{
+			}
+			else
+			{
+				int twoShun = 0;
+				if(dsv[0] == 1 && ddsv[0] == 0)
+				{
+					int snc[9];
+					diff(snc,s_num,0);
+					int i = 0;
+					for(;i<3;i++)
+						snc[i]--;
+					for(i=0;i<4;i++)
+					{
+						if(dsv[i] == 1 && ddsv[i] == 0 && snc[i] > 0 && snc[i+1] > 0 && snc[i+2] > 0)
+						{
+							//两顺
+							twoShun = 1;
+						}
+					}
+				}
+				if(twoShun == 0)
+				{
+					int oneKe = 0;
+					huNumJ -= 3;
+					if(huNumJ < 0)
+					{
+						return -1;
+					}
+					int i ;
+					for(i=0;i<4;i++)
+					{
+						if(s_num[i] == 4)
+						{
+							oneKe = 1;
+							addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+							{
+								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								u ->type = 0;
+								u ->sp = pChunk->sp->sp;
+								addJKN();
+							}
+							{
+								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								u ->type = value[2] - value[1] + 1;
+								u ->sp = pChunk->sp->next->sp;
+								if(u->type <2)
+									addJKN();
+							}
+							addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+							{
+								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								u ->type = 0;
+								u ->sp = pChunk->ep->sp;
+								addJKN();
+							}
+							{
+								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								u ->type = s_value[1] - s_value[0] + 1;
+								u ->sp = pChunk->sp->sp;
+								if(u->type <2)
+									addJKN();
+							}
+						}
+						else if(s_num[i] == 3)
+						{
+							oneKe = 1;
+							if(i==0)
+							{
+								addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+								{
+									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									u ->type = 0;
+									u ->sp = pChunk->sp->next->sp;
+									addJKN();
+								}
+								{
+									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									u ->type = s_value[3] - s_value[2] + 1;
+									u ->sp = pChunk->ep->prev->sp;
+									if(u->type <2)
+										addJKN();
+								}
+								addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+								{
+									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									u ->type = 0;
+									u ->sp = pChunk->ep->sp;
+									addJKN();
+								}
+								{
+									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									u ->type = s_value[2] - s_value[1] + 1;
+									u ->sp = pChunk->sp->next->sp;
+									if(u->type <2)
+										addJKN();
+								}
+							}
+							else if(i==1)
+							{
+								addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+								{
+									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									u ->type = 0;
+									u ->sp = pChunk->sp->sp;
+									addJKN();
+								}
+								{
+									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									u ->type = s_value[3] - s_value[1] + 1;
+									u ->sp = pChunk->ep->prev->sp;
+									if(u->type <2)
+										addJKN();
+								}
+							}
+							else if(i==2)
+							{
+								addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+								{
+									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									u ->type = 0;
+									u ->sp = pChunk->ep->sp;
+									addJKN();
+								}
+								{
+									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									u ->type = s_value[1] - s_value[0] + 1;
+									u ->sp = pChunk->sp->sp;
+									if(u->type <2)
+										addJKN();
+								}
+							}
+							else if(i==3)
+							{
+								addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+								{
+									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									u ->type = 0;
+									u ->sp = pChunk->sp->sp;
+									addJKN();
+								}
+								{
+									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									u ->type = s_value[2] - s_value[1] + 1;
+									u ->sp = pChunk->sp->next->sp;
+									if(u->type <2)
+										addJKN();
+								}
+								addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+								{
+									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									u ->type = 0;
+									u ->sp = pChunk->ep->prev->sp;
+									addJKN();
+								}
+								{
+									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									u ->type = s_value[1] - s_value[0] + 1;
+									u ->sp = pChunk->sp->sp;
+									if(u->type <2)
+										addJKN();
+								}
+							}
+						}
+					}
+					int oneShun = 0;
+					if(oneKe == 0)
+					{
+						int i;
+						for(i=0;i<4;i++)
+						{
+							if(dsv[i] == 1 && ddsv[i] == 0)
+							{
+								oneShun = 1;
+								int snc[9];
+								diff(snc,s_num,0);
+								snc[i] --;
+								snc[i+1] --;
+								snc[i+2] --;
+							}
+						}
+						if(oneShun == 1)
+						{
+							SPNCL *spncl = NULL;
+							newStruct(spncl);
+							SSPai *ssp = pChunk->sp;
+							int cn = 0;
+							for(i=0;i<sspN;i++)
+							{
+								if(snc[i] > 0)
+								{
+									if(i==0 || s_value[i] - s_value[i-1] > 2)
+									{
+										addStruct(spncl->cs,spncl->ce);
+										cn++;
+									}
+									SPaiNum *spn = addStruct(spncl->ce->ns,spncl->ce->ne);
+									spn ->sp = ssp ->sp;
+									spn ->num = snc[i]; 
+									ssp = ssp ->next;
+								}
+							}
+							if(cn > 2)
+								return -1;
+							SPNC *spnc = spncl ->cs;
+							if(cn==1)
+							{
+								addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+								{
+									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									u ->type = 0;
+									u ->sp = spnc->ns->sp;
+									addJKN();
+								}
+								{
+									Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+									u ->type = s_value[1] - s_value[0] + 1;
+									u ->sp = spnc->n;
+									if(u->type <2)
+										addJKN();
+								}
+							}
+							else//cn==2
+							{
+							}
+						}
+					}
+				}
+			}
+		}
 		else
 		{
 			pChunk=pChunk ->next;
 		}
 	}
-
-
 }
 
 int checkHu(int mah[],MAHJ mahj[],Card cards[4][9])
