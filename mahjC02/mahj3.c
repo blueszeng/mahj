@@ -22,8 +22,11 @@ Chunk *g_chunk=NULL;
 Chunk *g_chunkEnd=NULL;
 NodeRes *g_result=NULL;
 NodeRes *g_resultEnd=NULL;
+CUnitsSet *g_unitsSet = NULL:
+CUnitsSet *g_unitsSetEnd = NULL:
 int g_huNum = 0;
 int g_normalNum = 0;
+int g_jkN = 0;//将刻的数
 
 struct timeval timeVal[10];
 
@@ -220,18 +223,19 @@ int g_getShouPai()
 	for(i=0;i<g_normalNum;i++)
 	{
 		MAHJ* mahj = &(g_mahj[i]);
-		int color = mahj->color;
+		int color = mahj ->color;
 		SPai *spai;
-		newStruct(&spai);
-		spai->mahj=mahj;
-		spai->next=NULL;
-		spai->prev=g_spaiEnd[color];
+		newStruct(spai);
+		spai ->mahj=mahj;
+		spai ->next=NULL;
+		spai ->prev=g_spaiEnd[color];
 		if(g_spai[color]==0)
 		{
 			g_spai[color] = spai;
 		}
-		else{
-			g_spaiEnd[color]->next = spai;
+		else
+		{
+			g_spaiEnd[color] ->next = spai;
 		}
 		g_spaiEnd[color] = spai;
 	}
@@ -241,31 +245,31 @@ int g_getShouPai()
 		int value0 = -1;
 		while(p)
 		{
-			int value = p->mahj->value;
+			int value = p ->mahj ->value;
 			printf("---value:%d\n",value);
 			if(value!=value0)
 			{
 				SSPai *sspai;
-				newStruct(&sspai);
-				sspai->sp = p;
-				sspai->ep = p;
-				sspai->next = NULL;
-				sspai->prev = g_sspaiEnd[i];
+				newStruct(sspai);
+				sspai ->sp = p;
+				sspai ->ep = p;
+				sspai ->next = NULL;
+				sspai ->prev = g_sspaiEnd[i];
 				if(g_sspai[i]==0)
 				{
 					g_sspai[i] = sspai;
 				}
 				else{
-					g_sspaiEnd[i]->next = sspai;
+					g_sspaiEnd[i] ->next = sspai;
 				}
 				g_sspaiEnd[i] = sspai;
 			}
 			else
 			{
-				g_sspaiEnd[i]->ep = p;
+				g_sspaiEnd[i] ->ep = p;
 			}
 			value0 = value;
-			p = p->next;
+			p = p ->next;
 		}
 	}
 }
@@ -283,8 +287,8 @@ int freeRes()
 	while(node)
 	{
 		NodeRes *nodeN = NULL;
-		if(node->next)
-			nodeN = node->next;
+		if(node ->next)
+			nodeN = node ->next;
 		if(node)
 		{
 			i++;
@@ -315,19 +319,19 @@ int freeTreeNode(TreeNode *node)
 	int j = 0;
 	for(i=0;i<4;i++)
 	{
-		j = j + freeTreeNode(node->child[i]);
-		node->child[i] = NULL;
+		j = j + freeTreeNode(node ->child[i]);
+		node ->child[i] = NULL;
 	}
-	if(node->hand)
+	if(node ->hand)
 	{
 		int i;
 		for(i=0;i<3;i++)
 		{
-			free(node->hand->mahj[i]);
-			node->hand->mahj[i] = NULL;
+			free(node ->hand ->mahj[i]);
+			node ->hand ->mahj[i] = NULL;
 		}
-		free(node->hand);
-		node->hand = NULL;
+		free(node ->hand);
+		node ->hand = NULL;
 	}
 	free(node);
 	return j+1;
@@ -354,9 +358,9 @@ int saveRes(TreeNode *node)
 	if(nodeRes==NULL)
 		return -1;
 	TreeNode *pNode = node;
-	nodeRes->node = pNode;
-	nodeRes->next = NULL;
-	nodeRes->prev = g_resultEnd;
+	nodeRes ->node = pNode;
+	nodeRes ->next = NULL;
+	nodeRes ->prev = g_resultEnd;
 	if(g_result == NULL)
 	{
 		g_result = nodeRes;
@@ -370,9 +374,9 @@ int saveRes(TreeNode *node)
 
 
 int saveGu(Card cards[4][9],SPai *&spai,int group[],int &normalN,int &huNum,int &hasJiang){
-	MAHJ *mahj = spai->mahj;
-	int color = mahj->color;
-	int value = mahj->value;
+	MAHJ *mahj = spai ->mahj;
+	int color = mahj ->color;
+	int value = mahj ->value;
 	Card card = cards[color][value];
 	int amount = card.amount;
 	if(amount == 1)
@@ -436,20 +440,20 @@ int saveGu(Card cards[4][9],SPai *&spai,int group[],int &normalN,int &huNum,int 
 	}
 	if(huNum<0)return -1;
 	TreeNode *node;
-	newStruct(&node);
+	newStruct(node);
 	HAND *hand;
-	newStruct(&hand);
-	node->hand = hand;
-	hand->type = 0;
-	hand->num = amount;
+	newStruct(hand);
+	node ->hand = hand;
+	hand ->type = 0;
+	hand ->num = amount;
 	int i1;
 	for(i1=0;i1<amount;i1++)
 	{
-		hand->mahj[i1] = spai->mahj; 
+		hand ->mahj[i1] = spai ->mahj; 
 		deleteStruct(spai);
 	}
 	TreeNode *bnode;
-	newStruct(&bnode);
+	newStruct(bnode);
 	if(g_root==NULL)
 		g_root = bnode;
 	bnode ->child[amount-1] = node;
@@ -473,15 +477,15 @@ int g_split()
 	while(sspai)
 	{
 		Chunk *chunk;
-		newStruct(&chunk);
-		chunk->color = sspai->sp->mahj->color;
-		chunk->si = sspai->sp->mahj->value;
-		chunk->ei = chunk->si; 
-		chunk->sp = sspai;
-		chunk->ep = sspai;
-		chunk->next = NULL;
-		chunk->prev = g_chunkEnd;
-		chunk->num = sspai->ep - sspai->sp + 1;
+		newStruct(chunk);
+		chunk ->color = sspai ->sp ->mahj ->color;
+		chunk ->si = sspai ->sp ->mahj ->value;
+		chunk ->ei = chunk ->si; 
+		chunk ->sp = sspai;
+		chunk ->ep = sspai;
+		chunk ->next = NULL;
+		chunk ->prev = g_chunkEnd;
+		chunk ->num = sspai ->ep - sspai ->sp + 1;
 		if(g_chunk==NULL)
 		{
 			g_chunk = chunk;
@@ -490,7 +494,7 @@ int g_split()
 			g_chunkEnd ->next = chunk;
 		}
 		g_chunkEnd = chunk;
-		sspai = sspai->next;
+		sspai = sspai ->next;
 		chunkNum++;
 	}
 	int i = 0;
@@ -498,26 +502,25 @@ int g_split()
 	{
 		sspai = g_sspai[i];
 		int value0 = -2;
-		int num = 0;
 		while(sspai)
 		{
-			int value = sspai->sp->mahj->value;
+			int value = sspai ->sp ->mahj ->value;
 			printf("value0:%d,value:%d\n",value0,value);
-			num += sspai->ep - sspai->sp +1;
 			if(value - value0 > 1)
 			{
 				if(g_chunkEnd!=NULL)
-					g_chunkEnd->num = num;
-				num=0;
+				{
+					g_chunkEnd ->num = g_chunkEnd ->ep ->ep - g_chunkEnd ->sp ->sp + 1;
+				}
 				Chunk *chunk;
-				newStruct(&chunk);
-				chunk->color = sspai->sp->mahj->color;
-				chunk->si = sspai->sp->mahj->value;
-				chunk->ei = chunk->si; 
-				chunk->sp = sspai;
-				chunk->ep = sspai;
-				chunk->next = NULL;
-				chunk->prev = g_chunkEnd;
+				newStruct(chunk);
+				chunk ->color = sspai ->sp ->mahj ->color;
+				chunk ->si = sspai ->sp ->mahj ->value;
+				chunk ->ei = chunk ->si; 
+				chunk ->sp = sspai;
+				chunk ->ep = sspai;
+				chunk ->next = NULL;
+				chunk ->prev = g_chunkEnd;
 				if(g_chunk==NULL)
 				{
 					g_chunk = chunk;
@@ -529,126 +532,561 @@ int g_split()
 				chunkNum++;
 			}
 			else{
-				g_chunkEnd->ep = sspai;
-				g_chunkEnd->ei = sspai->sp->mahj->value;
+				g_chunkEnd ->ep = sspai;
+				g_chunkEnd ->ei = sspai ->sp ->mahj ->value;
 			}
 			value0 = value;
-			sspai = sspai->next;
+			sspai = sspai ->next;
 		}
-		g_chunkEnd->num = num;
 	}
 	return chunkNum;
+}
+
+
+int addJKN()
+{
+	g_jkN ++;
+	g_unitsSetEnd ->cue ->g_jkN ++;
+	g_unitsSetEnd ->g_jkN ++;
+}
+
+int diff(int obj[],int src[],int type,int num=9)//差分
+{
+	memset(obj,-1,num);
+	int i;
+	if(type == 0)
+	{
+		for(i = 0;i<num;i++)
+			obj[i] = src[i];
+	}
+	else if(type == 1)
+	{
+		for(i = 0;i<num-1;i++)//差分
+			obj[i] = src[i+1] - src[i];
+	}
+	else if(type == 2)
+	{
+		for(i = 0;i<num-2;i++)//二阶差分
+			obj[i] = src[i+2] + src[i] - 2*src[i+1];
+	}
 }
 
 int build(Card cards[4][9],int group[],int normalN,int huNum,int hasJiang)
 {
 	int i;
-	int guN = 0;//孤
-	int guDN = 0;//孤对
-	int guLN = 0;//孤连(两个相连的牌)
 	int huNumJ = huNum+1;//假定多加一个赖子,把将变成一个刻
-	int keN = 0;//刻的数
+	g_jkN = 0;
 	Chunk *pChunk = g_chunk;
 	while(pChunk)
 	{
-		if(pChunk->ei == pChunk->si)
+		if(pChunk ->ei == pChunk ->si)
 		{
-			if(pChunk->sp->sp == pChunk->sp->ep)
-				guN++;
-			if(pChunk->sp->sp == pChunk->sp->ep - 1)
-				guDN++;
+			if(pChunk ->num==1 || pChunk ->num==4)
+			{
+				huNumJ-=2;
+				g_jkN++;
+			}
+			if(pChunk ->num==2)
+			{
+				huNumJ-=1;
+				g_jkN++;
+			}
 		}
 		else
 		{
-			if(pChunk->num==2)
-				guLN++;
+			if(pChunk ->num==2)
+				huNumJ-=1;
 		}
-		pChunk=pChunk->next;
+		pChunk=pChunk ->next;
 	}
-	if(guN>2)
-		return -1;//孤的数目大于２个是不能胡的
-	if(huNum==0)
-	{
-		if(guN>0)
-			return -1;
-		if(guLN>0)
-			return -1;
-	}
-	else
-	{
-		if(guN==2)
-			return -1;
-		while(guN>0)
-		{
-			if(hasJiang == 0)
-			{
-				hasJiang = 1;
-				huNum--;
-			}
-			else
-				huNum-=2;
-			guN--;
-			if(huNum<0)
-				return -1;
-		}
-		while(guDN>0)
-		{
-			if(hasJiang == 0)
-			{
-				hasJiang = 1;
-			}
-			else
-				huNum--;
-			guDN--;
-			if(huNum<0)
-				return -1;
-		}
-		while(guLN>0)
-		{
-			huNum--;
-			guLN--;
-			if(huNum<0)
-				return -1;
-		}
-	}
+	if(huNumJ < 0)
+		return -1;
+	if(huNumJ==0 && g_jkN == 0)
+		return -1;
 
 
-	if(hasJiang == 0)
-	{
-	}
+	int hj1 = huNumJ;
 	pChunk = g_chunk;
 	while(pChunk)
 	{
-		if(pChunk->num==4)
+		int num = pChunk ->num;
+		if(num>=3 && pChunk ->ei != pChunk ->si)
 		{
+			num = num%3;
+			if(num==1)
+			{
+				huNumJ-=2;//必须用混补充为３的倍数，这是用的最少情况
+			}
+			else if(num==2)
+			{
+				huNumJ-=1;
+			}
 		}
-		pChunk=pChunk->next;
+		pChunk=pChunk ->next;
 	}
+	if(huNumJ<0)
+		return -1;
 
+
+	int addGu = 0;
 	//孤用混配对完了
 	pChunk = g_chunk;
 	while(pChunk)
 	{
-		if(pChunk->ei == pChunk->si)
+		int isGu = 0;
+		if(pChunk ->ei == pChunk ->si)
 		{
-			saveGu(cards,pChunk->sp->sp,group,normalN,huNum,hasJiang);
+			if(pChunk ->num !=3)
+			{
+				isGu = 1;
+			}
+		}
+		else if(pChunk ->num==2)
+		{
+			isGu = 2;
+		}
+		else
+		{
+			pChunk=pChunk ->next;
+		}
+		if(isGu > 0)
+		{
+			if(addGu == 0)
+			{
+				addStruct(g_unitsSet,g_unitsSetEnd);
+				addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+			}
+			CUnits *cu = g_unitsSetEnd ->cue;
+			Unit *u = addStruct(cu ->us,cu ->ue);
+			if(isGu == 1)
+			{
+				u ->type = pChunk ->num%3 - 1;
+				u ->sp[0] = pChunk ->sp ->sp;
+			}
+			else
+			{
+				SPai *p = pChunk ->sp ->sp;
+				u ->type = p ->next ->mahj ->value - p ->mahj ->value + 1;
+			}
+			deleteStruct(pChunk);
+		}
+	}
+
+	huNumJ = hj1;//还原为之前的混数，再重新检测
+	pChunk = g_chunk;
+	//剩下的是连顺分拆问题
+	while(pChunk)
+	{
+		int num = pChunk ->num;//牌的个数
+		int dis = pChunk ->ei - pChunk ->si + 1;//跨度
+		int value[9];
+		memset(value,-1,sizeof(value));
+		SPai *sp = pChunk ->sp ->sp;
+		int i = 0;
+		while(sp)
+		{
+			value[i++] = sp ->mahj ->value;
+			sp = sp ->next;
+		}
+		int s_value[9];
+		memset(s_value,-1,sizeof(s_value));
+		int s_num[9];
+		memset(s_num,0,sizeof(s_num));
+		SSPai *ssp = pChunk ->sp;
+		i = 0;
+		while(ssp)
+		{
+			s_value[i] = ssp ->sp ->mahj ->value;
+			s_num[i] = ssp ->ep - ssp ->sp + 1;
+			i++;
+			ssp = ssp ->next;
+		}
+		int sspN = i;//ssp的数目
+		int dsv[9];
+		diff(dsv,s_value,1);
+		int ddsv[9];
+		diff(ddsv,s_value,2);
+
+		i=0;
+		int sv = value[0];
+		while(value[i]>-1)
+		{
+			value[i] = value[i] - sv; 
+			i++;
+		}
+
+		i=0;
+		while(s_value[i]>-1)
+		{
+			s_value[i] = s_value[i] - sv; 
+			i++;
+		}
+
+		if(num==3)
+		{
+			if(value[1] == 1 && value[2] == 2)//3
+			{
+				//顺不处理
+			}
+			else//2+1
+			{
+				huNumJ -= 3;
+				if(huNumJ < 0)
+					return -1;
+				if(sspN==2)//对+1
+				{
+					addStruct(g_unitsSet,g_unitsSetEnd);
+					{
+						addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+						Unit *uD = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						uD ->type = 1;
+						Unit *uG = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						uG ->type = 0;
+						if(s_num[0] == 2)
+						{
+							uD ->sp = pChunk ->sp ->sp; 
+							uG ->sp = pChunk ->ep ->sp;
+						}
+						else
+						{
+							uD ->sp = pChunk ->ep ->sp;
+							uG ->sp = pChunk ->sp ->sp;
+						}
+						addJKN();
+					}
+
+					{
+						addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+						Unit *uL = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						uL ->type = s_value[1] + 1;
+						uL ->sp = pChunk ->sp ->sp; 
+						Unit *uG = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						uG ->type = 0;
+						if(s_num[0] == 2)
+						{
+							uG ->sp = pChunk ->sp ->sp;
+						}
+						else
+						{
+							uG ->sp = pChunk ->ep ->sp;
+						}
+						addJKN();
+					}
+
+				}
+				else
+				{
+					addStruct(g_unitsSet,g_unitsSetEnd);
+
+					{
+						addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+						Unit *uL = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						uL ->type = s_value[1] + 1;
+						uL ->sp = pChuck ->sp ->sp;
+						Unit *uG = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						uG ->type = 0;
+						uG ->sp = pChuck ->ep ->sp;
+						addJKN();
+					}
+
+					{
+						addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+						Unit *uL = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						uL ->type = s_value[2] + 1;
+						uL ->sp = pChuck ->sp ->next ->sp;
+						Unit *uG = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						uG ->type = 0;
+						uG ->sp = pChuck ->sp ->sp;
+						addJKN();
+					}
+				}
+			}
+			if(huNumJ == 0 && g_jkN == 0)
+			{
+				return -1;
+			}
+			deleteStruct(pChunk);
+		}
+		else if(num==4)
+		{
+			huNumJ -= 2;
+			if(huNumJ < 0)
+			{
+				return -1;
+			}
+			if(dis==1)//一扛
+			{
+				addStruct(g_unitsSet,g_unitsSetEnd);
+
+				{
+					addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+					Unit *uG = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+					uG ->type = 0;
+					uG ->sp = pChuck ->sp ->sp;
+					addJKN();
+				}
+
+			}
+			else if(dis==4 && sspN==4)//四顺1234
+			{
+				addStruct(g_unitsSet,g_unitsSetEnd);
+
+				{
+					addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+					Unit *uG = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+					uG ->type = 0;
+					uG ->sp = pChuck ->sp ->sp;
+					addJKN();
+				}
+
+				{
+					addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+					Unit *uG = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+					uG ->type = 0;
+					uG ->sp = pChuck ->ep ->sp;
+					addJKN();
+				}
+			}
+			else
+			{
+				addStruct(g_unitsSet,g_unitsSetEnd);
+				{
+					addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+					{
+						Unit *uL = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						uL ->type = value[1] + 1;
+						if(uL->type < 2)
+							addJKN();
+						uL ->sp = pChuck ->sp ->sp;
+					}
+					{
+						Unit *uL = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						uL ->type = value[3] + 1;
+						if(uL->type < 2)
+							addJKN();
+						uL ->sp = pChuck ->sp ->sp;
+					}
+				}
+				if(sspN == 2)
+				{
+					if(value[1] == value[2])//刻+1
+					{
+						if(value[1] == 0)//刻在前
+						{
+							addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+							{
+								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								u ->type = 0;
+								addJKN();
+								u ->sp = pChuck ->ep ->sp;
+							}
+						}
+						else//刻在后
+						{
+							addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+							{
+								Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+								u ->type = 0;
+								addJKN();
+								u ->sp = pChuck ->sp ->sp;
+							}
+						}
+					}
+					else//对+对
+					{
+						addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+						{
+							//两个连完全一样,只用添加一个连,因为没有另增胡牌
+							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+							u ->type = value[3];
+							u ->sp = pChuck ->sp ->sp;
+						}
+					}
+				}
+				else
+				{
+					int i;
+					int guIndex = -1; 
+					int shunIndex = -1;
+					int snc[4];
+					for(i=0;i<4;i++)
+					{
+						if(dsv[i] == 1 && ddsv[i] == 0)
+							shunIndex = i;
+					}
+					if(haveShun)
+					{
+						for(i=0;i<4;i++)
+						{
+							if(snc[i] == 1)
+							{
+								gnIndex = i;
+								break;
+							}
+						}
+					}
+					if(guIndex >= 0)
+					{
+						SSPai *ssp = pChunk ->sp;
+						while(guIndex-- > 0)
+							ssp = ssp->next; 
+						addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+						{
+							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+							u ->type = 0;
+							u ->sp = ssp ->sp;
+						}
+					}
+				}
+			}
+
+
+			if(huNumJ == 0 && g_jkN == 0)
+			{
+				return -1;
+			}
+			deleteStruct(pChunk);
+		}
+		else if(num==4)
+		{
+			huNumJ -= 2;
+			if(huNumJ < 0)
+			{
+				return -1;
+			}
+			addStruct(g_unitsSet,g_unitsSetEnd);
+			{
+				addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+				{
+					Unit *uL = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+					uL ->type = value[1] + 1;
+					if(uL->type < 2)
+						addJKN();
+					uL ->sp = pChuck ->sp ->sp;
+				}
+				{
+					Unit *uL = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+					uL ->type = value[3] - value[2] + 1;
+					if(uL->type < 2)
+						addJKN();
+					uL ->sp = pChuck ->sp ->sp;
+				}
+			}
+			if(s_num[0] == 3)
+			{
+				addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+				{
+					Unit *uG = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+					uG ->type = 0;
+					uG ->sp = pChuck ->ep ->sp;
+					addJKN();
+				}
+			}
+			else if(s_num[1] == 3)
+			{
+				addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+				{
+					Unit *uG = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+					uG ->type = 0;
+					uG ->sp = pChuck ->sp ->sp;
+					addJKN();
+				}
+			}
+			else
+			{
+				for(;i<2;i++)
+				{
+					if(dsv[i] == 1 && ddsv[i] == 0)
+					{
+						int snc[4];
+						diff(snc,s_num,0,4);
+						snc[i] --;
+						snc[i+1] --;
+						snc[i+2] --;
+						int guIndex = -1; 
+						int j;
+						for(j=0;i<4;i++)
+						{
+							if(snc[j] == 1)
+							{
+								gnIndex = j;
+								break;
+							}
+						}
+						SSPai *ssp = pChunk ->sp;
+						while(guIndex-- > 0)
+							ssp = ssp->next; 
+						addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+						{
+							Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+							u ->type = 0;
+							u ->sp = ssp ->sp;
+						}
+					}
+				}
+
+				if(value[3] - value[1] < 3 && value[2] < 3)
+				{
+					addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+					{
+						Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						u ->type = value[3] - value[1] + 1;
+						u ->sp = pChuck ->sp ->sp;
+					}
+					{
+						Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+						u ->type = value[1] + 1;
+						u ->sp = pChuck ->sp ->sp;
+					}
+				}
+			}
+
+
+			if(huNumJ == 0 && g_jkN == 0)
+			{
+				return -1;
+			}
+			deleteStruct(pChunk);
+		}
+		else if(num==5)
+		{
+			huNumJ -= 1;
+			if(huNumJ < 0)
+			{
+				return -1;
+			}
+			addStruct(g_unitsSet,g_unitsSetEnd);
+			if(s_num[0] == 3)
+			{
+				addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+				Unit *u= addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+				u->type = s_value[4] - s_value[3]+1;
+				u->sp = pChuck ->ep ->sp ->prev;
+				if(u->type < 2)
+					addJKN();
+			}
+			if(s_num[2] == 3)
+			{
+				addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+				Unit *u= addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+				u->type = s_value[1]+1;
+				u->sp = pChuck ->ep ->sp;
+				if(u->type < 2)
+					addJKN();
+			}
+			if(huNumJ == 0 && g_jkN == 0)
+			{
+				return -1;
+			}
 			deleteStruct(pChunk);
 		}
 		else
-			pChunk=pChunk->next;
+		{
+			pChunk=pChunk ->next;
+		}
 	}
 
-	//剩下的是连顺分拆问题
-	pChunk = g_chunk;
-	while(pChunk)
-	{
-		if(pChunk->ei == pChunk->si)
-		{
-		}
-		else
-			pChunk=pChunk->next;
-	}
-	
+
 }
 
 int checkHu(int mah[],MAHJ mahj[],Card cards[4][9])
@@ -718,8 +1156,8 @@ int str_to_value(char Str_Hex[],MAHJ *pMahj)//传进字符串
 
 	Pai = color*9+ value;
 	
-	pMahj->color = color;
-	pMahj->value = value;
+	pMahj ->color = color;
+	pMahj ->value = value;
 	
     return Pai;
 }
