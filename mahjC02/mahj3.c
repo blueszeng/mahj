@@ -972,7 +972,19 @@ int build(Card cards[4][9],int group[],int normalN,int huNum,int hasJiang)
 					uL ->sp = pChuck ->sp ->sp;
 				}
 			}
-			if(s_num[0] == 3)
+			if(dis==1)
+			{
+				addStruct(g_unitsSet,g_unitsSetEnd);
+				{
+					addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
+					Unit *uG = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
+					uG ->type = 0;
+					uG ->sp = pChuck ->sp ->sp;
+					addJKN();
+				}
+
+			}
+			else if(s_num[0] == 3)
 			{
 				addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
 				{
@@ -1025,17 +1037,12 @@ int build(Card cards[4][9],int group[],int normalN,int huNum,int hasJiang)
 					}
 				}
 
-				if(value[3] - value[1] < 3 && value[2] < 3)
+				if(sspN==2)
 				{
 					addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
 					{
 						Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-						u ->type = value[3] - value[1] + 1;
-						u ->sp = pChuck ->sp ->sp;
-					}
-					{
-						Unit *u = addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-						u ->type = value[1] + 1;
+						u ->type = value[2] + 1;
 						u ->sp = pChuck ->sp ->sp;
 					}
 				}
@@ -1060,7 +1067,7 @@ int build(Card cards[4][9],int group[],int normalN,int huNum,int hasJiang)
 			{
 				addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
 				Unit *u= addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-				u->type = s_value[4] - s_value[3]+1;
+				u->type = value[4] - value[3]+1;
 				u->sp = pChuck ->ep ->sp ->prev;
 				if(u->type < 2)
 					addJKN();
@@ -1069,10 +1076,18 @@ int build(Card cards[4][9],int group[],int normalN,int huNum,int hasJiang)
 			{
 				addStruct(g_unitsSetEnd ->cus,g_unitsSetEnd ->cue);
 				Unit *u= addStruct(g_unitsSetEnd ->cue ->us,g_unitsSetEnd ->cue ->ue);
-				u->type = s_value[1]+1;
-				u->sp = pChuck ->ep ->sp;
+				u->type = value[1]+1;
+				u->sp = pChuck ->sp ->sp;
 				if(u->type < 2)
 					addJKN();
+			}
+			int i = 0;
+			for(;i<3;i++)
+			{
+				if(dsv[i] == 1 && ddsv[i] == 0)
+				{
+					
+				}
 			}
 			if(huNumJ == 0 && g_jkN == 0)
 			{
