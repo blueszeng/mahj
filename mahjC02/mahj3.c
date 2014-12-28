@@ -61,6 +61,17 @@ int getCpuTime()
 	return usec;
 }
 
+int clearChunk(Chunk *pChunk)
+{
+	clearStruct(pChunk ->sp ->sp);
+	while(pChunk)
+	{
+		clearStruct(pChunk ->sp);
+		pChunk = pChunk ->next;
+	}
+	clearStruct(pChunk);
+}
+
 
 static int huShu;
 int main(int argc, char *argv[])
@@ -446,7 +457,74 @@ int saveGu(Card cards[4][9],SPai *&spai,int group[],int &normalN,int &huNum,int 
 }
 
 
+SPai *copySPai(SPai *start,SPai *deletes[],int num)
+{
+	SPai *ps = SPai *start;
+	SPai *ss = NULL;
+	SPai *se = NULL;
+	while(ps)
+	{
+		int isDel = 0;
+		int i = 0;
+		for(i = 0;i<num;i++)
+		{
+			if(deletes[i] == ps)
+			{
+				isDel = 1;
+				break;
+			}
+		}
+		if(isDel==0)
+		{
+			SPai *pc = addStruct(ss,se);
+			pc->mahj = ps->mahj;
+		}
+		ps = ps->next;
+	}
+}
 
+Chunk *split(SPai *sp)
+{
+	Chunk *cs = NULL;
+	Chunk *ce = NULL;
+	SSPai *ss = NULL;
+	SSPai *se = NULL;
+	int valueS = -1;
+	while(sp)
+	{
+		if(sp ->mahj ->value != valueS)
+		{
+			valueS = sp ->mahj ->value;
+			SSPai *ssp = addStruct(ss,se);
+			ssp ->sp = sp;
+		}
+		se ->ep = sp;
+		sp = sp ->next;
+	}
+	while(ssp)
+	{
+		ssp ->num = getDistance(ssp ->sp ,ssp ->ep) + 1;
+		ssp = ssp ->next;
+	}
+	SSPai *ssp = ss;
+	int valueC = -3;
+	while(ssp)
+	{
+		if(ssp ->sp ->mahj ->value - valueC > 2)
+		{
+			valueC = ssp ->sp ->mahj ->value;
+			Chunk *chunk = addStruct(cs,ce);
+			chunk ->color = sspai ->sp ->mahj ->color;
+			chunk ->si = sspai ->sp ->mahj ->value;
+			chunk ->sp = sspai;
+		}
+		ce ->num += sspai->num;
+		ce ->ep = sspai;
+		ce ->ei = sspai ->sp ->mahj ->value;
+		sspai = sspai ->next;
+	}
+	return cs;
+}
 
 
 int g_split()
@@ -469,11 +547,10 @@ int g_split()
 	for(i=0;i<3;i++)
 	{
 		sspai = g_sspaiS[i];
-		int oldValue = -2;
 		while(sspai)
 		{
 			int value = sspai ->sp ->mahj ->value;
-			if(value - oldValue > 1)
+			if(value - oldValue > 2)
 			{
 				Chunk *chunk = addStruct(g_chunkS,g_chunkE);
 				chunk ->color = sspai ->sp ->mahj ->color;
@@ -967,6 +1044,9 @@ int build(Chunk *chunkS,int huNumJ,int jkN)
 				}
 				if(hasShun == 0)
 				{
+					huNumJ -= 3;
+					if(huNumJ < 0)
+						return -1;
 					SPai *sp = pChunk ->sp ->sp;
 					//ÖÐ¼äÎª¹Â
 					{
@@ -1269,6 +1349,7 @@ int build(Chunk *chunkS,int huNumJ,int jkN)
 					{
 						int i;
 						int snc[9];
+						SPai *delSp[3];
 						for(i=0;i<4;i++)
 						{
 							if(dsv[i] == 1 && ddsv[i] == 0)
@@ -1278,62 +1359,44 @@ int build(Chunk *chunkS,int huNumJ,int jkN)
 								snc[i] --;
 								snc[i+1] --;
 								snc[i+2] --;
+								int j = i;
+								SSPai *ssp = pChunk ->sp;
+								while(j > 0)
+								{
+									ssp = ssp ->next;
+									j --;
+								}
+								delSp[0] = ssp ->sp;
+								ssp = ssp ->next;
+								delSp[1] = ssp ->sp;
+								ssp = ssp ->next;
+								delSp[2] = ssp ->next ->sp;
 							}
 						}
 						if(oneShun == 1)
 						{
-							SPNCL *spncl = NULL;
-							newStruct(spncl);
-							SSPai *ssp = pChunk ->sp;
-							int cn = 0;
-							for(i=0;i<sspN;i++)
-							{
-								if(snc[i] > 0)
-								{
-									if(i==0 || s_value[i] - s_value[i-1] > 2)
-									{
-										addStruct(spncl ->cs,spncl ->ce);
-										cn++;
-									}
-									SPaiNum *spn = addStruct(spncl ->ce ->ns,spncl ->ce ->ne);
-									spn ->sp = ssp ->sp;
-									spn ->num = snc[i]; 
-									ssp = ssp ->next;
-								}
-							}
-							if(cn > 2)
+							SPai *sp = copySPai(pChunk ->sp ->sp, delSp, 3);	
+							Chunk *subChunk = split(sp);
+							int res = build(subChunk,huNumJ,jkN);
+							clearChunk(subChunk);
+							if(res == -1)
 								return -1;
-							SPNC *spnc = spncl ->cs;
-							if(cn==1)
-							{
-								addStruct(g_unitsSetE ->cus,g_unitsSetE ->cue);
-								{
-									Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
-									u ->type = 0;
-									u ->sp = spnc ->ns ->sp;
-									addJKN(jkN);
-								}
-								{
-									Unit *u = addStruct(g_unitsSetE ->cue ->us,g_unitsSetE ->cue ->ue);
-									u ->type = s_value[1] - s_value[0] + 1;
-									u ->sp = spnc ->ns ->sp;
-									if(u ->type <2)
-										addJKN(jkN);
-								}
-							}
-							else//cn==2
-							{
-							}
 						}
 					}
 				}
 			}
 		}
-		else
+		else if(num == 7)
 		{
-			pChunk=pChunk ->next;
+			int i;
+			for(i=0;i<7;i++)
+			{
+			}
 		}
+		else
+			pChunk=pChunk ->next;
 	}
+	return huNumJ;
 }
 
 int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
