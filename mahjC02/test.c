@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "test.h"
+#include "mahj3.h"
 struct timeval timeVal[10];
 
 struct timeval setTime(int i)
