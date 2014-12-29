@@ -16,8 +16,6 @@ Chunk *g_chunkS=NULL;
 Chunk *g_chunkE=NULL;
 NodeRes *g_resS=NULL;
 NodeRes *g_resE=NULL;
-CUnitsSet *g_unitsSetS = NULL;
-CUnitsSet *g_unitsSetE = NULL;
 int g_huNum = 0;
 int g_normalNum = 0;
 
@@ -72,6 +70,63 @@ int clearChunk(Chunk *pChunk)
 	clearStruct(pChunk);
 }
 
+int splitStr(char *src, const char *delim, char *ps[])
+{
+	int num = 0;
+	while(1)
+	{
+		char *s = NULL;
+		if(num == 0)
+			s = src;
+		char *p = strtok(s,delim);
+		if(p == NULL)
+			break;
+		ps[num] = p;
+		num ++;
+	}
+	return num;
+}
+
+int splitLinkStr(char *linkStr,int front[],int back[])
+{
+	char *ps[10];
+	int num = splitStr(linkStr,",",ps);
+	int i;
+	for(i=0;i<num;i++)
+	{
+		char *index[2];
+		splitStr(ps[i],":",index);
+		front[i] = *(index[0]) - '0';
+		back[i] = *(index[1]) - '0';
+		if(back[i] == -3)//'-'
+			back[i] = -1;
+	}
+	return num;
+}
+
+int splitSetStr(char *setStr,int* front[],int* back[],int *num)
+{
+	char *linkStr[10];
+	int n = splitStr(setStr,";",linkStr);
+	int i;
+	for(i=0;i<n;i++)
+	{
+		int f[10];
+		int b[10];
+		num[i] = splitLinkStr(linkStr[i],f,b);
+		front[i] = (int *)malloc(num[i] * sizeof(int));
+		back[i] = (int *)malloc(num[i] * sizeof(int));
+		int j;
+		for(j=0;j<num[i];j++)
+		{
+			*(front[i]+j) = f[j]; 
+			*(back[i]+j) = b[j]; 
+		}
+	}
+	return n;
+}
+
+
 
 static int huShu;
 int main(int argc, char *argv[])
@@ -109,7 +164,6 @@ int main(int argc, char *argv[])
 			count++;//行计数器加一
 			continue;//结束本行分割，读取下一行
 		}
-					
 		for(mah_num=1;(NULL!=(p=strtok(NULL,delim)));mah_num++)//分割，直到无从分割
 		{
 			if((p[0]==' ') || (p[0]==13) || (p[0]==10))//屏蔽所有空格，换行。
@@ -128,7 +182,6 @@ int main(int argc, char *argv[])
 			count++;	
 			continue;
 		}
-		
 		if((mah_num > pNum)||(mah_num < pNum_1))//第%d行只有%d个数据不合法,本行分割不成功，读取下一行
 		{
 			count++;	
@@ -183,7 +236,7 @@ int main(int argc, char *argv[])
 		{
 			printf("there is too many chunks to huPai\n");
 		}
-		checkHu(mah,g_mahj,cards);
+		checkHu(g_huNum);
 		printf("time:%d\n",getRunTime(0,1));
 	}
 	 printf("total huShu:%d\n",huShu);
@@ -459,7 +512,7 @@ int saveGu(Card cards[4][9],SPai *&spai,int group[],int &normalN,int &huNum,int 
 
 SPai *copySPai(SPai *start,SPai *deletes[],int num)
 {
-	SPai *ps = SPai *start;
+	SPai *ps = start;
 	SPai *ss = NULL;
 	SPai *se = NULL;
 	while(ps)
@@ -501,12 +554,13 @@ Chunk *split(SPai *sp)
 		se ->ep = sp;
 		sp = sp ->next;
 	}
+	SSPai *ssp = ss;
 	while(ssp)
 	{
 		ssp ->num = getDistance(ssp ->sp ,ssp ->ep) + 1;
 		ssp = ssp ->next;
 	}
-	SSPai *ssp = ss;
+	ssp = ss;
 	int valueC = -3;
 	while(ssp)
 	{
@@ -514,14 +568,14 @@ Chunk *split(SPai *sp)
 		{
 			valueC = ssp ->sp ->mahj ->value;
 			Chunk *chunk = addStruct(cs,ce);
-			chunk ->color = sspai ->sp ->mahj ->color;
-			chunk ->si = sspai ->sp ->mahj ->value;
-			chunk ->sp = sspai;
+			chunk ->color = ssp ->sp ->mahj ->color;
+			chunk ->si = ssp ->sp ->mahj ->value;
+			chunk ->sp = ssp;
 		}
-		ce ->num += sspai->num;
-		ce ->ep = sspai;
-		ce ->ei = sspai ->sp ->mahj ->value;
-		sspai = sspai ->next;
+		ce ->num += ssp->num;
+		ce ->ep = ssp;
+		ce ->ei = ssp ->sp ->mahj ->value;
+		ssp = ssp ->next;
 	}
 	return cs;
 }
@@ -547,6 +601,7 @@ int g_split()
 	for(i=0;i<3;i++)
 	{
 		sspai = g_sspaiS[i];
+		int oldValue = -3;
 		while(sspai)
 		{
 			int value = sspai ->sp ->mahj ->value;
@@ -574,11 +629,10 @@ int g_split()
 }
 
 
-int addJKN(int &jkN)
+int addJKN(int &jkN,Unit *u)
 {
 	jkN ++;
-	g_unitsSetE ->cue ->jkN ++;
-	g_unitsSetE ->jkN ++;
+	u->jkN ++;
 }
 
 int diff(int obj[],int src[],int type,int num=9)//差分
@@ -609,6 +663,144 @@ int product(int doc[],int vec1[],int vec2[],int num=9)//点积
 	for(i=0;i<num;i++)
 		doc[i] = vec1[i] * vec2[i];
 	return 1;
+}
+
+int addUnit(SetLink *link, Chunk *pChunk, int value[], int front, int back, int &jkN)
+{
+	if(back < 0)
+	{
+		LinkSet *set = addStruct(link ->ss,link ->se); 
+		Unit *u = newStruct(set->u);
+		u ->type = 0;
+		u ->sp = getPointer(pChunk ->sp ->sp, front);
+		if(u ->type <2)
+			addJKN(jkN,u);
+	}
+	else
+	{
+		LinkSet *set = addStruct(link ->ss,link ->se); 
+		Unit *u = newStruct(set->u);
+		u ->type = value[back] - value[front] + 1;
+		u ->sp = getPointer(pChunk ->sp ->sp, front);
+		if(u ->type <2)
+			addJKN(jkN,u);
+	}
+}
+
+int addLink(LinkSet *set, Chunk *pChunk, int value[], int front[], int back[], int num, int &jkN)
+{
+	SetLink *link = addStruct(set ->ls, set ->le);
+	int i;
+	for(i=0;i<num;i++)
+	{
+		addUnit(link, pChunk, value, front[i], back[i], jkN);
+	}
+}
+
+int addTwoATwoSet(SetLink *link, Chunk *pChunk,int *value, int front[],int back[],int num, int &jkN)//2+2+...
+{
+	if(num==1)
+	{
+		addUnit(link, pChunk, value, front[0], back[0], jkN);
+	}
+	else if(num==2)
+	{
+		LinkSet *set = addStruct(link ->ss, link ->se);
+		{
+			addLink(set, pChunk, value, front, back, num, jkN);
+		}
+		if(value[front[0]] == value[back[0]] && value[front[1]] == value[back[1]] && value[front[1]] - value[front[0]] < 3)
+		{
+			SetLink *link = addStruct(set ->ls, set ->le);
+			{
+				addUnit(link, pChunk, value, front[0], front[1], jkN);
+			}
+		}
+	}
+	else if(num==3)
+	{
+		LinkSet *set = addStruct(link ->ss, link ->se);
+		{
+			{
+				SetLink *link = addStruct(set ->ls, set->le);
+				{
+					addTwoATwoSet(link,pChunk,value,front,back,1,jkN);
+					addTwoATwoSet(link,pChunk,value,front+1,back+1,num-1,jkN);
+				}
+			}
+			{
+				SetLink *link = addStruct(set ->ls, set->le);
+				{
+					addTwoATwoSet(link,pChunk,value,front+2,back+2,1,jkN);
+					addTwoATwoSet(link,pChunk,value,front,back,num-1,jkN);
+				}
+			}
+		}
+	}
+	else if(num>3)
+	{
+		LinkSet *set = addStruct(link ->ss, link ->se);
+		{
+			{
+				SetLink *link = addStruct(set ->ls, set->le);
+				{
+					addTwoATwoSet(link,pChunk,value,front,back,1,jkN);
+					addTwoATwoSet(link,pChunk,value,front+1,back+1,num-1,jkN);
+				}
+			}
+			{
+				SetLink *link = addStruct(set ->ls, set->le);
+				{
+					addTwoATwoSet(link,pChunk,value,front,back,2,jkN);
+					addTwoATwoSet(link,pChunk,value,front+2,back+2,num-2,jkN);
+				}
+			}
+		}
+	}
+}
+
+int addArraySet(SetLink *link, Chunk *pChunk,int *value, int index[],int num, int &jkN)//2+2+...+1
+{
+	if(num==1)
+	{
+		addUnit(link, pChunk, value, index[0], -1, jkN);
+	}
+	else if(num==2)
+	{
+		addUnit(link, pChunk, value, index[0], index[1], jkN);
+	}
+	else if(num>2)
+	{
+		if(num%2 == 0)
+		{
+			int pairs = num/2;
+			int i;
+			int front[10];
+			int back[10];
+			for(i=0;i<pairs;i++)
+			{
+				front[i] = index[i*2];
+				back[i] = index[i*2+1];
+			}
+			addTwoATwoSet(link,pChunk,value,front,back,pairs,jkN);
+		}
+		else
+		{
+			LinkSet *set = addStruct(link ->ss, link ->se);
+			{
+				int i = 0;
+				while(i<num)
+				{
+					SetLink *link = addStruct(set ->ls, set->le);
+					{
+						addArraySet(link,pChunk,value,index+i,1,jkN);
+						addArraySet(link,pChunk,value,index,i,jkN);
+						addArraySet(link,pChunk,value,index+i+1,num-i-1,jkN);
+					}
+				}
+			}
+		}
+	}
 }
 
 
@@ -777,7 +969,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 						Unit *u = newStruct(set->u);
 						u ->type = 0;
 						u ->sp = pChunk ->sp ->sp;
-						addJKN(jkN);
+						addJKN(jkN,u);
 					}
 					{
 						LinkSet *set = addStruct(link ->ss,link ->se); 
@@ -785,7 +977,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 						u ->type = s_value[2] - s_value[1] + 1;
 						u ->sp = pChunk ->sp ->sp ->next;
 						if(u ->type <2)
-							addJKN(jkN);
+							addJKN(jkN,u);
 					}
 				}
 				{
@@ -795,7 +987,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 						Unit *u = newStruct(set->u);
 						u ->type = 0;
 						u ->sp = pChunk ->ep ->sp;
-						addJKN(jkN);
+						addJKN(jkN,u);
 					}
 					{
 						LinkSet *set = addStruct(link ->ss,link ->se); 
@@ -803,7 +995,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 						u ->type = s_value[1] - s_value[0] + 1;
 						u ->sp = pChunk ->sp ->sp;
 						if(u ->type <2)
-							addJKN(jkN);
+							addJKN(jkN,u);
 					}
 				}
 			}
@@ -827,7 +1019,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 					Unit *u = newStruct(set->u);
 					u ->type = value[1] + 1;
 					if(u ->type < 2)
-						addJKN(jkN);
+						addJKN(jkN,u);
 					u ->sp = pChunk ->sp ->sp;
 				}
 				{
@@ -835,7 +1027,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 					Unit *u = newStruct(set->u);
 					u ->type = value[3] - value[2] + 1;
 					if(u ->type < 2)
-						addJKN(jkN);
+						addJKN(jkN,u);
 					u ->sp = pChunk ->sp ->sp;
 				}
 			}
@@ -845,9 +1037,9 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 				{
 					LinkSet *set = addStruct(link ->ss,link ->se); 
 					Unit *u = newStruct(set->u);
-					uG ->type = 0;
-					uG ->sp = pChunk ->ep ->sp;
-					addJKN(jkN);
+					u ->type = 0;
+					u ->sp = pChunk ->ep ->sp;
+					addJKN(jkN,u);
 				}
 			}
 			else if(s_num[1] == 3)
@@ -856,9 +1048,9 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 				{
 					LinkSet *set = addStruct(link ->ss,link ->se); 
 					Unit *u = newStruct(set->u);
-					uG ->type = 0;
-					uG ->sp = pChunk ->sp ->sp;
-					addJKN(jkN);
+					u ->type = 0;
+					u ->sp = pChunk ->sp ->sp;
+					addJKN(jkN,u);
 				}
 			}
 			else
@@ -891,7 +1083,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 							Unit *u = newStruct(set->u);
 							u ->type = 0;
 							u ->sp = ssp ->sp;
-							addJKN(jkN);
+							addJKN(jkN,u);
 						}
 					}
 				}
@@ -931,7 +1123,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 					u ->type = value[4] - value[3]+1;
 					u ->sp = pChunk ->ep ->sp ->prev;
 					if(u ->type < 2)
-						addJKN(jkN);
+						addJKN(jkN,u);
 				}
 			}
 			else if(s_num[2] == 3 || s_num[1] == 4)
@@ -943,7 +1135,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 					u ->type = value[1]+1;
 					u ->sp = pChunk ->sp ->sp;
 					if(u ->type < 2)
-						addJKN(jkN);
+						addJKN(jkN,u);
 				}
 			}
 			else if(s_num[1] == 3)
@@ -960,7 +1152,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 						Unit *u = newStruct(set->u);
 						u ->type = 0;
 						u ->sp = ssp ->sp;
-						addJKN(jkN);
+						addJKN(jkN,u);
 					}
 					{
 						SSPai *ssp = pChunk ->sp;
@@ -971,7 +1163,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 						Unit *u = newStruct(set->u);
 						u ->type = 0;
 						u ->sp = ssp ->sp;
-						addJKN(jkN);
+						addJKN(jkN,u);
 					}
 				}
 			}
@@ -1019,7 +1211,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 								u ->type = s_value[guIndex[1]]- s_value[guIndex[0]] + 1;
 								u ->sp = ssp ->sp;
 								if(u ->type<2)
-									addJKN(jkN);
+									addJKN(jkN,u);
 							}
 						}
 						else
@@ -1037,7 +1229,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 								Unit *u = newStruct(set->u);
 								u ->type = 0;
 								u ->sp = ssp ->sp;
-								addJKN(jkN);
+								addJKN(jkN,u);
 							}
 							{
 								SSPai *ssp = pChunk ->sp;
@@ -1048,7 +1240,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 								Unit *u = newStruct(set->u);
 								u ->type = 0;
 								u ->sp = ssp ->sp;
-								addJKN(jkN);
+								addJKN(jkN,u);
 							}
 						}
 					}
@@ -1067,7 +1259,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 							Unit *u = newStruct(set->u);
 							u ->type = 0;
 							u ->sp = sp ->next ->next;
-							addJKN(jkN);
+							addJKN(jkN,u);
 						}
 						{
 							LinkSet *set = addStruct(link ->ss,link ->se); 
@@ -1075,7 +1267,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 							u ->type = value[1] + 1;
 							u ->sp = sp;
 							if(u ->type <2)
-								addJKN(jkN);
+								addJKN(jkN,u);
 						}
 						{
 							LinkSet *set = addStruct(link ->ss,link ->se); 
@@ -1083,7 +1275,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 							u ->type = value[4] - value[3] + 1;
 							u ->sp = sp;
 							if(u ->type <2)
-								addJKN(jkN);
+								addJKN(jkN,u);
 						}
 					}
 					//右边为孤
@@ -1094,7 +1286,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 							Unit *u = newStruct(set->u);
 							u ->type = 0;
 							u ->sp = sp ->next ->next ->next ->next;
-							addJKN(jkN);
+							addJKN(jkN,u);
 						}
 						{
 							LinkSet *set = addStruct(link ->ss,link ->se); 
@@ -1102,7 +1294,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 							u ->type = value[1] - value[0] + 1;
 							u ->sp = sp;
 							if(u ->type <2)
-								addJKN(jkN);
+								addJKN(jkN,u);
 						}
 						{
 							LinkSet *set = addStruct(link ->ss,link ->se); 
@@ -1110,7 +1302,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 							u ->type = value[3] - value[2] + 1;
 							u ->sp = sp;
 							if(u ->type <2)
-								addJKN(jkN);
+								addJKN(jkN,u);
 						}
 						if(value[3] - value[1] < 3 && value[2] - value[0] < 3)
 						{
@@ -1120,7 +1312,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 								Unit *u = newStruct(set->u);
 								u ->type = 0;
 								u ->sp = sp ->next ->next ->next ->next;
-								addJKN(jkN);
+								addJKN(jkN,u);
 							}
 							{
 								LinkSet *set = addStruct(link ->ss,link ->se); 
@@ -1128,7 +1320,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 								u ->type = value[3] - value[1] + 1;
 								u ->sp = sp;
 								if(u ->type <2)
-									addJKN(jkN);
+									addJKN(jkN,u);
 							}
 							{
 								LinkSet *set = addStruct(link ->ss,link ->se); 
@@ -1136,7 +1328,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 								u ->type = value[2] - value[0] + 1;
 								u ->sp = sp;
 								if(u ->type <2)
-									addJKN(jkN);
+									addJKN(jkN,u);
 							}
 						}
 					}
@@ -1148,7 +1340,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 							Unit *u = newStruct(set->u);
 							u ->type = 0;
 							u ->sp = sp;
-							addJKN(jkN);
+							addJKN(jkN,u);
 						}
 						{
 							LinkSet *set = addStruct(link ->ss,link ->se); 
@@ -1156,7 +1348,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 							u ->type = value[2] - value[1] + 1;
 							u ->sp = sp;
 							if(u ->type <2)
-								addJKN(jkN);
+								addJKN(jkN,u);
 						}
 						{
 							LinkSet *set = addStruct(link ->ss,link ->se); 
@@ -1164,7 +1356,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 							u ->type = value[4] - value[3] + 1;
 							u ->sp = sp;
 							if(u ->type <2)
-								addJKN(jkN);
+								addJKN(jkN,u);
 						}
 						if(value[2] - value[1] < 3 && value[4] - value[3] < 3)
 						{
@@ -1174,7 +1366,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 								Unit *u = newStruct(set->u);
 								u ->type = 0;
 								u ->sp = sp;
-								addJKN(jkN);
+								addJKN(jkN,u);
 							}
 							{
 								LinkSet *set = addStruct(link ->ss,link ->se); 
@@ -1182,7 +1374,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 								u ->type = value[2] - value[1] + 1;
 								u ->sp = sp;
 								if(u ->type <2)
-									addJKN(jkN);
+									addJKN(jkN,u);
 							}
 							{
 								LinkSet *set = addStruct(link ->ss,link ->se); 
@@ -1190,7 +1382,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 								u ->type = value[4] - value[3] + 1;
 								u ->sp = sp;
 								if(u ->type <2)
-									addJKN(jkN);
+									addJKN(jkN,u);
 							}
 						}
 					}
@@ -1204,12 +1396,12 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 		}
 		else if(num == 6)
 		{
-			SSPai *delSp[3];
+			SPai *delSp[3];
 			int delNum = 0;
 			int i;
 			for(i=0;i<6;i++)
 			{
-				if(s_num[i] > = 0)
+				if(s_num[i] >= 3)
 				{
 					SSPai *ssp = getPointer(pChunk ->sp ,i); 
 					delSp[0] = ssp->sp;
@@ -1243,69 +1435,70 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 				if(huNumJ < 0)
 					return -1;
 				//2+2+2
-				SetLink *link = addStruct(set ->ls, set ->le);
-				{
-					LinkSet *set = addStruct(link ->ss,link ->se); 
-					Unit *u = newStruct(set->u);
-					u ->type = value[1] - value[0] + 1;
-					u ->sp = pChunk ->sp ->sp;
-					if(u ->type <2)
-						addJKN(jkN);
-				}
-				{
-					LinkSet *set = addStruct(link ->ss,link ->se); 
-					Unit *u = newStruct(set->u);
-					u ->type = value[3] - value[2] + 1;
-					u ->sp = pChunk ->sp ->sp ->next ->next;
-					if(u ->type <2)
-						addJKN(jkN);
-				}
-				{
-					LinkSet *set = addStruct(link ->ss,link ->se); 
-					Unit *u = newStruct(set->u);
-					u ->type = value[5] - value[4] + 1;
-					u ->sp = pChunk ->sp ->sp ->next ->next ->next ->next;
-					if(u ->type <2)
-						addJKN(jkN);
-				}
-				if(value[1] == value[0] && value[3] == value[2])
 				{
 					SetLink *link = addStruct(set ->ls, set ->le);
 					{
-						LinkSet *set = addStruct(link ->ss,link ->se); 
-						Unit *u = newStruct(set->u);
-						u ->type = value[2] - value[1] + 1;
-						u ->sp = pChunk ->sp ->sp;
-						if(u ->type <2)
-							addJKN(jkN);
-					}
-					{
-						LinkSet *set = addStruct(link ->ss,link ->se); 
-						Unit *u = newStruct(set->u);
-						u ->type = value[5] - value[4] + 1;
-						u ->sp = pChunk ->sp ->sp ->next ->next ->next ->next;
-						if(u ->type <2)
-							addJKN(jkN);
+						{
+							LinkSet *set = addStruct(link ->ss, link ->se);
+							{
+								int front[10];
+								int back[10];
+								char str[] = "4:5";
+								int num = splitLinkStr(str,front,back);
+								addLink(set, pChunk, value, front, back, num, jkN);
+							}
+						}
+						{
+							LinkSet *set = addStruct(link ->ss, link ->se);
+							{
+								int front[10];
+								int back[10];
+								char str[] = "0:1,2:3";
+								int num = splitLinkStr(str,front,back);
+								addLink(set, pChunk, value, front, back, num, jkN);
+							}
+						}
+						if(value[1] == value[0] && value[3] == value[2])
+						{
+							int front[10];
+							int back[10];
+							char str[] = "1:2";
+							int num = splitLinkStr(str,front,back);
+							addLink(set, pChunk, value, front, back, num, jkN);
+						}
 					}
 				}
-				if(value[2] == value[3] && value[5] == value[4])
 				{
 					SetLink *link = addStruct(set ->ls, set ->le);
 					{
-						LinkSet *set = addStruct(link ->ss,link ->se); 
-						Unit *u = newStruct(set->u);
-						u ->type = value[1] - value[0] + 1;
-						u ->sp = pChunk ->sp ->sp;
-						if(u ->type <2)
-							addJKN(jkN);
-					}
-					{
-						LinkSet *set = addStruct(link ->ss,link ->se); 
-						Unit *u = newStruct(set->u);
-						u ->type = value[4] - value[3] + 1;
-						u ->sp = pChunk ->sp ->sp ->next ->next ->next ->next;
-						if(u ->type <2)
-							addJKN(jkN);
+						{
+							LinkSet *set = addStruct(link ->ss, link ->se);
+							{
+								int front[10];
+								int back[10];
+								char str[] = "0:1";
+								int num = splitLinkStr(str,front,back);
+								addLink(set, pChunk, value, front, back, num, jkN);
+							}
+						}
+						{
+							LinkSet *set = addStruct(link ->ss, link ->se);
+							{
+								int front[10];
+								int back[10];
+								char str[] = "2:3,4:5";
+								int num = splitLinkStr(str,front,back);
+								addLink(set, pChunk, value, front, back, num, jkN);
+							}
+							if(value[1] == value[0] && value[3] == value[2])
+							{
+								int front[10];
+								int back[10];
+								char str[] = "3:4";
+								int num = splitLinkStr(str,front,back);
+								addLink(set, pChunk, value, front, back, num, jkN);
+							}
+						}
 					}
 				}
 			}
@@ -1315,17 +1508,16 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 			}
 			deleteStruct(pChunk);
 		}
-		else if(num == 7)
+		else if(num >= 7)
 		{
-			huNumJ -= 2;
-			if(huNumJ < 0)
+			if(huNumJ < num%3)
 				return -1;
-			SSPai *delSp[3];
+			SPai *delSp[3];
 			int delNum = 0;
 			int i;
 			for(i=0;i<7;i++)
 			{
-				if(s_num[i] > = 0)
+				if(s_num[i] >= 3)
 				{
 					SSPai *ssp = getPointer(pChunk ->sp ,i); 
 					delSp[0] = ssp->sp;
@@ -1344,7 +1536,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 					break;
 				}
 			}
-			int res = huNumJ;
+			int res = -1;
 			if(delNum > 0)
 			{
 				SPai *sp = copySPai(pChunk ->sp ->sp, delSp, 3);	
@@ -1353,83 +1545,27 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 				res = build(subChunk,link,huNumJ,jkN);
 				clearChunk(subChunk);
 			}
-			if(res<huNumJ)
+			do
 			{
-				huNumJ -= 3;
-				if(huNumJ < 0)
-					return -1;
-				//2+2+2+1
-				//adding...
-				SetLink *link = addStruct(set ->ls, set ->le);
+				if(res < huNumJ)
 				{
-					LinkSet *set = addStruct(link ->ss,link ->se); 
-					Unit *u = newStruct(set->u);
-					u ->type = value[1] - value[0] + 1;
-					u ->sp = pChunk ->sp ->sp;
-					if(u ->type <2)
-						addJKN(jkN);
-				}
-				{
-					LinkSet *set = addStruct(link ->ss,link ->se); 
-					Unit *u = newStruct(set->u);
-					u ->type = value[3] - value[2] + 1;
-					u ->sp = pChunk ->sp ->sp ->next ->next;
-					if(u ->type <2)
-						addJKN(jkN);
-				}
-				{
-					LinkSet *set = addStruct(link ->ss,link ->se); 
-					Unit *u = newStruct(set->u);
-					u ->type = value[5] - value[4] + 1;
-					u ->sp = pChunk ->sp ->sp ->next ->next ->next ->next;
-					if(u ->type <2)
-						addJKN(jkN);
-				}
-				if(value[1] == value[0] && value[3] == value[2])
-				{
+					huNumJ -= num/2;
+					huNumJ -= (num%2)*2;
+					if(huNumJ < res || huNumJ < 0)
+						break;
+					res = huNumJ;
 					SetLink *link = addStruct(set ->ls, set ->le);
-					{
-						LinkSet *set = addStruct(link ->ss,link ->se); 
-						Unit *u = newStruct(set->u);
-						u ->type = value[2] - value[1] + 1;
-						u ->sp = pChunk ->sp ->sp;
-						if(u ->type <2)
-							addJKN(jkN);
-					}
-					{
-						LinkSet *set = addStruct(link ->ss,link ->se); 
-						Unit *u = newStruct(set->u);
-						u ->type = value[5] - value[4] + 1;
-						u ->sp = pChunk ->sp ->sp ->next ->next ->next ->next;
-						if(u ->type <2)
-							addJKN(jkN);
-					}
+					int index[] = {0,1,2,3,4,5,6,7,8,9,10};
+					addArraySet(link, pChunk,value, index, num, jkN);
 				}
-				if(value[2] == value[3] && value[5] == value[4])
-				{
-					SetLink *link = addStruct(set ->ls, set ->le);
-					{
-						LinkSet *set = addStruct(link ->ss,link ->se); 
-						Unit *u = newStruct(set->u);
-						u ->type = value[1] - value[0] + 1;
-						u ->sp = pChunk ->sp ->sp;
-						if(u ->type <2)
-							addJKN(jkN);
-					}
-					{
-						LinkSet *set = addStruct(link ->ss,link ->se); 
-						Unit *u = newStruct(set->u);
-						u ->type = value[4] - value[3] + 1;
-						u ->sp = pChunk ->sp ->sp ->next ->next ->next ->next;
-						if(u ->type <2)
-							addJKN(jkN);
-					}
-				}
-			}
-			if(huNumJ == 0 && jkN == 0)
+			}while(0);
+			if(res < 0)
+				return -1;
+			if(res == 0 && jkN == 0)
 			{
 				return -1;
 			}
+			huNumJ = res;
 			deleteStruct(pChunk);
 		}
 		else
@@ -1438,16 +1574,17 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 	return huNumJ;
 }
 
-int checkHu(Card cards[4][9],int group[],int normalN,int huNum)
+int checkHu(int huNum)
 {
 	int i;
 	int huNumJ = huNum+1;//假定多加一个赖子,把将变成一个刻
-	build(g_chunkS,huNumJ,0);
+	int jkN = 0;
+	SetLink *link;
+	newStruct(link);
+	huNumJ = build(g_chunkS,link,huNumJ,jkN);
+	printf("huNumJ:%d\n",huNumJ);
 }
 
-int checkHu(int mah[],MAHJ mahj[],Card cards[4][9])
-{
-}
 
 TreeNode *newTreeNode()
 {
