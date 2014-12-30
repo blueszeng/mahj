@@ -25,7 +25,7 @@ SOURCE := $(wildcard *.c) $(wildcard *.h)
 
 #SRC_SOURCE := $(wildcard ../src/*.c) $(wildcard ../include/*.h)
 
-MAIN = mahj3.c
+MAIN = mahj4.c
 TARGET = a 
 
 ALL:$(TARGET)
