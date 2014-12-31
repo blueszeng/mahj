@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 	int color, val, ture_color;
 	struct pai cards[4][10]; 
 	struct pai *laizi = NULL;
-	 fp = fopen("test.txt", "r");//打开文件
+	 fp = fopen("../mahjC02/data3", "r");//打开文件
 	 if (fp == NULL)
 	 {
 		 printf("打开文件失败！\n");

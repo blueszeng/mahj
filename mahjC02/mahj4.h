@@ -80,6 +80,33 @@ typedef struct unit{
 	struct unit *prev;
 }Unit;
 
+typedef struct huLinkSet HuLinkSet;
+typedef struct huSetLink HuSetLink;
+struct huSetLink{
+	HuLinkSet *parent;
+	SPai *hs;
+	SPai *he;
+	int jkN;
+	int outJKN;
+	HuLinkSet *ss;
+	HuLinkSet *se;
+	HuSetLink *next;
+	HuSetLink *prev;
+};
+
+struct huLinkSet{
+	HuSetLink *parent;
+	SPai *hs;
+	SPai *he;
+	int jkN;
+	int outJKN;
+	Unit *u;
+	HuSetLink *ls;
+	HuSetLink *le;
+	HuLinkSet *next;
+	HuLinkSet *prev;
+};
+
 
 typedef struct linkSet LinkSet;
 typedef struct setLink SetLink;
@@ -133,7 +160,6 @@ int clearStruct(T *&t){
 	if(t == NULL)return -1;
 	while(t)
 		deleteStruct(t);
-	t = NULL;
 }
 
 template<class T>
@@ -208,8 +234,14 @@ int str_to_value(char Str_Hex[],MAHJ *pMahj);
 int setPaiFromMah(int mah[],int normalN,char Pai[]);
 MAHJ value_to_mahj(int value);
 int mahj_to_value(MAHJ mahj);
-int travel(LinkSet *set);
-int travel(SetLink *link);
 int clearSetLink(SetLink *&link);
 int clearLinkSet(LinkSet *&set);
+HuSetLink *createHuSetLink(SetLink *link);
+HuLinkSet *createHuLinkSet(LinkSet *set);
+int travelHu(HuSetLink *link,int jkN);
+int travelHu(HuLinkSet *set,int jkN);
+MAHJ *getMahjPointer(int color,int value);
+int printSPai(SPai *ss);
+int travel(SetLink *link);
+int travel(LinkSet *set);
 #endif

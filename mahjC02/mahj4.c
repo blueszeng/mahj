@@ -14,12 +14,25 @@ int g_zong=0;
 TreeNode *g_root = NULL;
 NodeRes *g_resS=NULL;
 NodeRes *g_resE=NULL;
+SetLink *g_link=NULL;
 
 MAHJ g_mahj[pNum];
+MAHJ g_mahjs[4][9];
 
 int g_init()
 {
 	memset(g_mahj,0,sizeof(g_mahj));
+	memset(g_mahjs,0,sizeof(g_mahjs));
+	int i;
+	int j;
+	for(i=0;i<4;i++)
+	{
+		for(j=0;j<9;j++)
+		{
+			g_mahjs[i][j].value = j;
+			g_mahjs[i][j].color = i;
+		}
+	}
 }
 
 struct timeval timeVal[10];
@@ -58,17 +71,18 @@ int clearChunk(Chunk *chunkS)
 
 int clearSetLink(SetLink *&link)
 {
+	if(link == NULL) return 0;
 	LinkSet *set = link->ss;
 	while(set)
 	{
 		clearLinkSet(set);
 	}
 	deleteStruct(link);
-	link = NULL;
 }
 
 int clearLinkSet(LinkSet *&set)
 {
+	if(set == NULL)return 0;
 	if(set->u)
 	{
 		free(set->u);
@@ -83,7 +97,6 @@ int clearLinkSet(LinkSet *&set)
 		}
 	}
 	deleteStruct(set);
-	set = NULL;
 }
 
 int splitStr(char *src, const char *delim, char *ps[])
@@ -244,6 +257,7 @@ int main(int argc, char *argv[])
 		g_zong++; //合法的数据条数
 		sortP(mah,g_mahj);
 		int huNum = getHuNum(mah);
+		printf("huNum:%d\n",huNum);
 		checkHu(huNum);
 		printf("time:%d\n",getRunTime(0,1));
 	}
@@ -472,12 +486,12 @@ int saveGu(Card cards[4][9],SPai *&spai,int group[],int &normalN,int &huNum,int 
 }
 
 
-SPai *copySPai(SPai *start,SPai *deletes[],int sdi,int num)
+SPai *copySPai(SPai *start,SPai *end,SPai *deletes[],int sdi,int num)
 {
 	SPai *ps = start;
 	SPai *ss = NULL;
 	SPai *se = NULL;
-	while(ps)
+	while(ps != end)
 	{
 		int isDel = 0;
 		int i = 0;
@@ -793,7 +807,7 @@ int addArraySet(SetLink *link, Chunk *pChunk,int *value, int index[],int num, in
 }
 
 
-int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
+int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN,int height)
 {
 	Chunk *pChunk = chunkS;
 	while(pChunk)
@@ -823,14 +837,18 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 		clearChunk(chunkS);
 		return -1;
 	}
+
+	/*
 	if(huNumJ==0 && jkN == 0)
 	{
 		clearChunk(chunkS);
 		return -1;
 	}
+	*/
 
 	int hj1 = huNumJ;
 	int jkN1 = jkN;
+
 	pChunk = chunkS;
 	while(pChunk)
 	{
@@ -881,8 +899,14 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 				int value[2];
 				value[0] = pChunk->sp->sp->mahj->value;
 				value[1] = pChunk->sp->sp->next->mahj->value;
+				if(value[0] == 2 && value[1] == 3)
+				{
+					printf("Debug...\n");
+					travel(g_link);
+				}
 				int index[] = {0,1};
 				addArraySet(link,pChunk,value,index,2,jkN);
+				travel(g_link);
 			}
 		}
 		pChunk = pChunk ->next;
@@ -901,7 +925,12 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 			pChunk = pChunk->next;
 			continue;//前面已经处理过了
 		}
-		if(huNumJ < num%3)
+		int jn = 0;
+		if(num%3 == 1)
+			jn = 2;
+		else if(num%3 == 2)
+			jn = 1;
+		if(huNumJ < jn)
 		{
 			clearChunk(chunkS);
 			return -1;
@@ -1026,13 +1055,17 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 		SetLink *links[10];
 		while(delNum > 0)
 		{
-			SPai *sp = copySPai(pChunk ->sp ->sp, delSp,ri*3, 3);	
+			SPai *sp = copySPai(pChunk ->sp ->sp,pChunk->ep->ep->next, delSp,ri*3, 3);	
 			Chunk *subChunk = splitSubChunk(sp);
-			SetLink *link = addStruct(set ->ls, set ->le);
-			res[ri] = build(subChunk,link,huNumJ,jkN);
-			links[ri] = link;
+			addStruct(set ->ls, set ->le);
+			links[ri] = (set->le);
+			res[ri] = build(subChunk,set->le,huNumJ,jkN,height+1);
 			ri++;
 			delNum -= 3;
+		}
+		if(height == 0)
+		{
+			printf("hi\n");
 		}
 		int resMax = -1;
 		for(i=0;i<ri;i++)
@@ -1042,16 +1075,24 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 		}
 		if(resMax >= 0)
 		{
+			printf("res: ");
 			for(i=0;i<ri;i++)
 			{
+				printf("%d ",res[i]);
 				if(res[i] < resMax)
 				{
 					clearSetLink(links[i]);
 				}
 			}
+			printf("\n");
 		}
 		do
 		{
+			printf("huNum:%d,num:%d\n",huNumJ,num);
+			if(num == 8)
+			{
+				printf("huNum:%d,num:%d\n",huNumJ,num);
+			}
 			huNumJ -= num/2;
 			huNumJ -= (num%2)*2;
 			if(huNumJ < resMax || huNumJ < 0)
@@ -1068,43 +1109,237 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int &jkN)
 			clearChunk(chunkS);
 			return -1;
 		}
+		/*
 		if(huNumJ == 0 && jkN == 0)
 		{
 			clearChunk(chunkS);
 			return -1;
 		}
+		*/
 		pChunk = pChunk ->next;
 	}
 	clearChunk(chunkS);
 	return huNumJ;
 }
 
-
-int travel(LinkSet *set)
+HuSetLink *createHuSetLink(SetLink *link)
 {
-	SetLink *link = set ->ls;
+	HuSetLink *huLink = NULL;
+	newStruct(huLink);
+	LinkSet *set = link ->ss;
+	while(set)
+	{
+		HuLinkSet *huSet = createHuLinkSet(set);
+		insertStruct(huSet,huLink->ss,huLink->se);
+		huSet->parent = huLink;
+		huLink->jkN += huSet->jkN;
+		set = set ->next;
+	}
+	return huLink;
+}
+
+HuLinkSet *createHuLinkSet(LinkSet *set)
+{
+	HuLinkSet *huSet = NULL;
+	newStruct(huSet);
+	if(set->u)
+	{
+		Unit *u = NULL; 
+		newStruct(u);
+		u->mahj = set->u->mahj;
+		u->jkN = set->u->jkN;
+		u->type = set->u->type;
+		huSet->u  = u;
+		if(huSet->u->type < 2)
+			huSet->jkN = 1;
+	}
+	else
+	{
+		setLink *link = set ->ls;
+		while(link)
+		{
+			HuSetLink *huLink = createHuSetLink(link);
+			insertStruct(huLink,huSet->ls,huSet->le);
+			huLink ->parent = huSet;
+			if(huLink->jkN > huSet->jkN)
+				huSet->jkN = huLink->jkN;
+			link = link->next;
+		}
+	}
+	return huSet;
+}
+
+
+int getOutJKN(HuSetLink *link)
+{
+	if(link == NULL) return -1;
+	HuLinkSet *set = link->parent;
+	while(set)
+	{
+		if(link->jkN == 1)return 1;
+		if(set->jkN == 1 && link->jkN == 0)
+			return 0;
+		link = set->parent;
+		set = link->parent;
+	}
+	return 1;
+}
+
+int addHuPai(SPai *&ss,SPai *&se,int color,int value)
+{
+	MAHJ *mahj = getMahjPointer(color,value);
+	if(mahj == NULL) return -1;
+	int havePai = 0;
+	SPai *ps = ss;
+	if(se)
+	{
+		while(ps!=se->next)
+		{
+			if(ps->mahj == mahj)
+				havePai = 1;
+			ps = ps->next;
+		}
+	}
+	if(havePai == 0)
+	{
+		SPai *sp = addStruct(ss,se); 
+		sp -> mahj = mahj;
+	}
+}
+
+int addHuPai(SPai *&ss,SPai *&se,SPai *sp)
+{
+	addHuPai(ss,se,sp->mahj->color,sp->mahj->value);
+}
+
+
+MAHJ *getMahjPointer(int color,int value)
+{
+	if(color < 0 || color > 3)
+		return NULL;
+	if(value < 0 || value > 8)
+		return NULL;
+	if(color == 3 && value > 5)
+		return NULL;
+	return &(g_mahjs[color][value]);
+}
+
+
+int travelHu(HuSetLink *link,int jkN)
+{
+	HuLinkSet *set = link ->ss;
+	while(set)
+	{
+		Unit *u = set->u;
+		if(u)
+		{
+			MAHJ *mahj = u->mahj;
+			printf("color:%d value:%d type:%d\n",mahj->color,mahj->value,u->type);
+			if(u->type == 0)
+			{
+				addHuPai(link->hs,link->he,mahj->color,mahj->value);
+				if(jkN > 1)
+				{
+					addHuPai(link->hs,link->he,mahj->color,mahj->value+1);
+					addHuPai(link->hs,link->he,mahj->color,mahj->value+2);
+					addHuPai(link->hs,link->he,mahj->color,mahj->value-1);
+					addHuPai(link->hs,link->he,mahj->color,mahj->value-2);
+				}
+			}
+			else if(u->type == 1 && jkN > 1)
+				addHuPai(link->hs,link->he,mahj->color,mahj->value);
+			else if(u->type == 2)
+			{
+				if(jkN > 1 || getOutJKN(link) == 1)
+				{
+					addHuPai(link->hs,link->he,mahj->color,mahj->value+2);
+					addHuPai(link->hs,link->he,mahj->color,mahj->value-1);
+				}
+			}
+			else if(u->type == 3)
+			{
+				if(jkN > 1 || getOutJKN(link) == 1)
+				{
+					addHuPai(link->hs,link->he,mahj->color,mahj->value+1);
+				}
+			}
+		}
+		else
+		{
+			travelHu(set,jkN);
+			SPai *ss = set ->hs;
+			SPai *se = set ->he;
+			if(se)
+			{
+				while(ss!=se->next)
+				{
+					addHuPai(link->hs,link->he,ss);
+					ss = ss ->next;
+				}
+			}
+		}
+		set = set ->next;
+	}
+}
+
+int printSPai(SPai *ss)
+{
+	while(ss)
+	{
+		printf("hu:%d:%d\n",ss->mahj->color,ss->mahj->value);
+		ss = ss ->next;
+	}
+}
+
+
+int travelHu(HuLinkSet *set,int jkN)
+{
+	HuSetLink *link = set ->ls;
 	while(link)
 	{
-		travel(link);
+		travelHu(link,jkN);
+		SPai *ss = link ->hs;
+		SPai *se = link ->he;
+		if(se)
+		{
+			while(ss!=se->next)
+			{
+				addHuPai(set->hs,set->he,ss);
+				ss = ss ->next;
+			}
+		}
 		link = link -> next;
 	}
 }
 
 int travel(SetLink *link)
 {
+	if(link==NULL)return -1;
 	LinkSet *set = link ->ss;
 	while(set)
 	{
 		Unit *u = set->u;
 		if(u)
 		{
-			printf("pai:%d:%d,type::%d,jkN:%d\n",u->mahj->color,u->mahj->value,u->type,u->jkN);
+			MAHJ *mahj = u->mahj;
+			printf("color:%d value:%d type:%d\n",mahj->color,mahj->value,u->type);
 		}
 		else
 		{
 			travel(set);
 		}
 		set = set ->next;
+	}
+}
+
+int travel(LinkSet *set)
+{
+	if(set==NULL) return -1;
+	SetLink *link = set->ls;
+	while(link)
+	{
+		travel(link);
+		link = link->next;
 	}
 }
 
@@ -1123,9 +1358,25 @@ int checkHu(int huNum)
 	int jkN = 0;
 	SetLink *link;
 	newStruct(link);
-	huNumJ = build(pChunk,link,huNumJ,jkN);
+	g_link = link;
+	huNumJ = build(pChunk,link,huNumJ,jkN,0);
 	travel(link);
-	printf("huNumJ:%d\n",huNumJ);
+	HuSetLink *hLink = createHuSetLink(link);
+	clearSetLink(link);
+	printf("huNumJ:%d,jkN:%d\n",huNumJ,hLink->jkN);
+	if(huNumJ > 2)
+	{
+		printf("全胡\n");
+	}
+	else if(huNumJ < 0 || hLink->jkN == 0)
+	{
+		printf("没胡\n");
+	}
+	else
+	{
+		travelHu(hLink,hLink->jkN);
+		printSPai(hLink->hs);
+	}
 }
 
 
