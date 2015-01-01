@@ -11,16 +11,13 @@
 #include <sys/resource.h>
 
 int g_zong=0;
-TreeNode *g_root = NULL;
-NodeRes *g_resS=NULL;
-NodeRes *g_resE=NULL;
 SetLink *g_link=NULL;
-
 MAHJ g_mahj[pNum];
 MAHJ g_mahjs[4][9];
 
 int g_init()
 {
+	g_link = NULL;
 	memset(g_mahj,0,sizeof(g_mahj));
 	memset(g_mahjs,0,sizeof(g_mahjs));
 	int i;
@@ -96,6 +93,37 @@ int clearLinkSet(LinkSet *&set)
 			clearSetLink(link);
 		}
 	}
+	deleteStruct(set);
+}
+int clearSetLink(HuSetLink *&link)
+{
+	if(link == NULL) return 0;
+	HuLinkSet *set = link->ss;
+	while(set)
+	{
+		clearLinkSet(set);
+	}
+	clearStruct(link->hs);
+	deleteStruct(link);
+}
+
+int clearLinkSet(HuLinkSet *&set)
+{
+	if(set == NULL)return 0;
+	if(set->u)
+	{
+		free(set->u);
+		set->u = NULL;
+	}
+	else
+	{
+		HuSetLink *link = set->ls;
+		while(link)
+		{
+			clearSetLink(link);
+		}
+	}
+	clearStruct(set->hs);
 	deleteStruct(set);
 }
 
@@ -178,7 +206,6 @@ int main(int argc, char *argv[])
 		 printf("打开文件失败！\n");
        exit(EXIT_FAILURE);
 	 }
-
      while ((getline(&line, &len, fp)) != EOF) //读取一行
 	{	
 		memset(&mah,0,sizeof(mah));//二维数组初始化为0
@@ -259,7 +286,6 @@ int main(int argc, char *argv[])
 		int huNum = getHuNum(mah);
 		printf("huNum:%d\n",huNum);
 		checkHu(huNum);
-		printf("time:%d\n",getRunTime(0,1));
 	}
 	 printf("total huShu:%d\n",huShu);
 
@@ -269,6 +295,7 @@ int main(int argc, char *argv[])
 	{
        free(line);
 	}
+	printf("time:%d\n",getRunTime(0,1));
     return EXIT_SUCCESS;
 }
 
@@ -305,37 +332,6 @@ int sumGroup(int group[])
 	return group[0]+group[1]+group[2];
 }
 
-int initRes()
-{
-	g_resS = NULL;
-	g_resE = g_resS;
-}
-
-int freeRes()
-{
-	NodeRes *node = g_resS;
-	int i = 0;
-	while(node)
-	{
-		NodeRes *nodeN = NULL;
-		if(node ->next)
-			nodeN = node ->next;
-		if(node)
-		{
-			i++;
-			free(node);
-		}
-		node = nodeN;
-	}
-	g_resS = NULL;
-	g_resE = NULL;
-}
-
-
-int initHu()
-{
-	initRes();
-}
 
 int freeTreeNode(TreeNode *node)
 {
@@ -361,128 +357,6 @@ int freeTreeNode(TreeNode *node)
 	}
 	free(node);
 	return j+1;
-}
-
-int freeHu()
-{
-	freeRes();
-	//freeTreeNode(root);
-}
-
-
-int saveRes(TreeNode *node)
-{
-	huShu++;
-	NodeRes *nodeRes = (NodeRes *)malloc(sizeof(NodeRes));
-	if(nodeRes==NULL)
-		return -1;
-	TreeNode *pNode = node;
-	nodeRes ->node = pNode;
-	nodeRes ->next = NULL;
-	nodeRes ->prev = g_resE;
-	if(g_resS == NULL)
-	{
-		g_resS = nodeRes;
-	}
-	else
-	{
-		g_resE ->next = nodeRes;
-	}
-	g_resE = nodeRes;
-}
-
-
-int saveGu(Card cards[4][9],SPai *&spai,int group[],int &normalN,int &huNum,int &hasJiang)
-{
-	MAHJ *mahj = spai ->mahj;
-	int color = mahj ->color;
-	int value = mahj ->value;
-	Card card = cards[color][value];
-	int amount = card.amount;
-	if(amount == 1)
-	{
-		if(hasJiang == 0)
-		{
-			hasJiang = 1;
-			card.amount = 0;
-			card.index = 0;
-			normalN--;
-			huNum--;
-		}
-		else{
-			if(group[0]==0)
-			{
-				return -1;
-			}
-			card.amount = 0;
-			card.index = 0;
-			normalN--;
-			huNum--;
-			huNum--;
-			group[0]--;
-		}
-	}
-	else if(amount == 2)
-	{
-		if(hasJiang == 0)
-		{
-			hasJiang = 1;
-			card.amount = 0;
-			card.index = 0;
-			normalN--;
-			normalN--;
-		}
-		else{
-			if(group[1]==0)
-			{
-				return -1;
-			}
-			card.amount = 0;
-			card.index = 0;
-			normalN--;
-			normalN--;
-			huNum--;
-			group[1]--;
-		}
-	}
-	else if(amount == 3)
-	{
-		if(group[2]==0)
-		{
-			return -1;
-		}
-		card.amount = 0;
-		card.index = 0;
-		normalN--;
-		normalN--;
-		normalN--;
-		group[2]--;
-	}
-	if(huNum<0)return -1;
-	TreeNode *node;
-	newStruct(node);
-	HAND *hand;
-	newStruct(hand);
-	node ->hand = hand;
-	hand ->type = 0;
-	hand ->num = amount;
-	int i1;
-	for(i1=0;i1<amount;i1++)
-	{
-		hand ->mahj[i1] = spai ->mahj; 
-		deleteStruct(spai);
-	}
-	TreeNode *bnode;
-	newStruct(bnode);
-	if(g_root==NULL)
-		g_root = bnode;
-	bnode ->child[amount-1] = node;
-	node ->parent = bnode;
-	bnode = node;
-	if(sumGroup(group)==0 && hasJiang)
-	{
-		saveRes(bnode);
-	}
 }
 
 
@@ -1362,7 +1236,7 @@ int checkHu(int huNum)
 	huNumJ = build(pChunk,link,huNumJ,jkN,0);
 	travel(link);
 	HuSetLink *hLink = createHuSetLink(link);
-	clearSetLink(link);
+	clearSetLink(link);link = NULL;g_link = NULL;
 	printf("huNumJ:%d,jkN:%d\n",huNumJ,hLink->jkN);
 	if(huNumJ > 2)
 	{

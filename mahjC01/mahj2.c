@@ -157,7 +157,6 @@ int main(int argc, char *argv[])
 		sortP(mah,mahj);
 
 		checkHu(mah,mahj);
-		printf("time:%d\n",getRunTime(0,1));
 	}
 	 printf("total huShu:%d\n",huShu);
 
@@ -167,8 +166,8 @@ int main(int argc, char *argv[])
 	{
        free(line);
 	}
+	printf("time:%d\n",getRunTime(0,1));
     return EXIT_SUCCESS;
-	
 }
 
 int sortP(int mah[pNum],MAHJ mahj[pNum])
@@ -377,7 +376,7 @@ int printHu()
 		printf("jiangHu");
 	}
 	printf("\n");
-	printRes();
+//	printRes();
 }
 
 

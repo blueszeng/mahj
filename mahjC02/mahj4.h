@@ -236,6 +236,8 @@ MAHJ value_to_mahj(int value);
 int mahj_to_value(MAHJ mahj);
 int clearSetLink(SetLink *&link);
 int clearLinkSet(LinkSet *&set);
+int clearSetLink(HuSetLink *&link);
+int clearLinkSet(HuLinkSet *&set);
 HuSetLink *createHuSetLink(SetLink *link);
 HuLinkSet *createHuLinkSet(LinkSet *set);
 int travelHu(HuSetLink *link,int jkN);
