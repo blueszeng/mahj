@@ -212,6 +212,14 @@ T * getPointer(T *start,int dis)
 	return t;
 }
 
+template<class T>
+int swapValue(T &t1,T &t2)
+{
+	T t = t1;
+	t1 = t2;
+	t2 = t;
+}
+
 int getRunTime(int start,int end);
 int getCpuTime();
 int sortP(int mah[pNum],MAHJ mahj[pNum]);
@@ -246,4 +254,15 @@ MAHJ *getMahjPointer(int color,int value);
 int printSPai(SPai *ss);
 int travel(SetLink *link);
 int travel(LinkSet *set);
+
+#define debug_level 1
+#if debug_level != 0
+#define MyTrace(level,fmt, args...) do { \
+	if( level <= debug_level )		\
+		printf(fmt, ## args); \
+} while (0)
+#else
+	#define MyTrace(a...)	
+#endif
+
 #endif

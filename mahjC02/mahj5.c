@@ -4,7 +4,7 @@
 #include<math.h>
 #include<ctype.h>
 #include <stdlib.h>
-#include "mahj4.h"
+#include "mahj5.h"
 
 #include <sys/types.h>
 #include <sys/time.h>
@@ -14,6 +14,8 @@ int g_zong=0;
 SetLink *g_link=NULL;
 MAHJ g_mahj[pNum];
 MAHJ g_mahjs[4][9];
+
+
 
 int g_init()
 {
@@ -51,7 +53,7 @@ int getCpuTime()
 	getrusage(RUSAGE_SELF, &rup);
 	long sec = rup.ru_utime.tv_sec + rup.ru_stime.tv_sec;
 	long usec = rup.ru_utime.tv_usec + rup.ru_stime.tv_usec;
-	printf("%d:%d",sec,usec);
+	MyTrace(2,"%d:%d",sec,usec);
 	usec += sec*1000000;
 	return usec;
 }
@@ -203,7 +205,7 @@ int main(int argc, char *argv[])
 	 fp = fopen("data3", "r");//打开文件
 	 if (fp == NULL)
 	 {
-		 printf("打开文件失败！\n");
+		 MyTrace(2,"打开文件失败！\n");
        exit(EXIT_FAILURE);
 	 }
      while ((getline(&line, &len, fp)) != EOF) //读取一行
@@ -284,10 +286,10 @@ int main(int argc, char *argv[])
 		g_zong++; //合法的数据条数
 		sortP(mah,g_mahj);
 		int huNum = getHuNum(mah);
-		printf("huNum:%d\n",huNum);
+		MyTrace(2,"huNum:%d\n",huNum);
 		checkHu(huNum);
 	}
-	 printf("total huShu:%d\n",huShu);
+	 MyTrace(2,"total huShu:%d\n",huShu);
 
 	fclose(fp);
 	fp = NULL;
@@ -295,7 +297,7 @@ int main(int argc, char *argv[])
 	{
        free(line);
 	}
-	printf("time:%d\n",getRunTime(0,1));
+	MyTrace(1,"time:%d\n",getRunTime(0,1));
     return EXIT_SUCCESS;
 }
 
@@ -309,9 +311,8 @@ int sortP(int mah[pNum],MAHJ mahj[pNum])
 		{
 			if(mah[j] > mah[j+1])
 			{
-				MAHJ tmp = mahj[j];
-				mahj[j] = mahj[j+1]; 
-				mahj[j+1] = tmp;
+				swapValue(mah[j],mah[j+1]);
+				swapValue(mahj[j],mahj[j+1]);
 			}
 		}
 	}
@@ -755,7 +756,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int height)
 				value[1] = pChunk->sp->sp->next->mahj->value;
 				if(value[0] == 2 && value[1] == 3)
 				{
-					printf("Debug...\n");
+					MyTrace(2,"Debug...\n");
 					travel(g_link);
 				}
 				int index[] = {0,1};
@@ -918,7 +919,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int height)
 		}
 		if(height == 0)
 		{
-			printf("hi\n");
+			MyTrace(2,"hi\n");
 		}
 		int resMax = -1;
 		for(i=0;i<ri;i++)
@@ -928,23 +929,23 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int height)
 		}
 		if(resMax >= 0)
 		{
-			printf("res: ");
+			MyTrace(2,"res: ");
 			for(i=0;i<ri;i++)
 			{
-				printf("%d ",res[i]);
+				MyTrace(2,"%d ",res[i]);
 				if(res[i] < resMax)
 				{
 					clearSetLink(links[i]);
 				}
 			}
-			printf("\n");
+			MyTrace(2,"\n");
 		}
 		do
 		{
-			printf("huNum:%d,num:%d\n",huNumJ,num);
+			MyTrace(2,"huNum:%d,num:%d\n",huNumJ,num);
 			if(num == 8)
 			{
-				printf("huNum:%d,num:%d\n",huNumJ,num);
+				MyTrace(2,"huNum:%d,num:%d\n",huNumJ,num);
 			}
 			huNumJ -= num/2;
 			huNumJ -= (num%2)*2;
@@ -1080,7 +1081,7 @@ int travelHu(HuSetLink *link,int jkN)
 		if(u)
 		{
 			MAHJ *mahj = u->mahj;
-			printf("color:%d value:%d type:%d\n",mahj->color,mahj->value,u->type);
+			MyTrace(2,"color:%d value:%d type:%d\n",mahj->color,mahj->value,u->type);
 			if(u->type == 0)
 			{
 				addHuPai(link->hs,link->he,mahj->color,mahj->value);
@@ -1132,7 +1133,7 @@ int printSPai(SPai *ss)
 {
 	while(ss)
 	{
-		printf("hu:%d:%d\n",ss->mahj->color,ss->mahj->value);
+		MyTrace(2,"hu:%d:%d\n",ss->mahj->color,ss->mahj->value);
 		ss = ss ->next;
 	}
 }
@@ -1168,7 +1169,7 @@ int travel(SetLink *link)
 		if(u)
 		{
 			MAHJ *mahj = u->mahj;
-			printf("color:%d value:%d type:%d\n",mahj->color,mahj->value,u->type);
+			MyTrace(2,"color:%d value:%d type:%d\n",mahj->color,mahj->value,u->type);
 		}
 		else
 		{
@@ -1193,10 +1194,10 @@ int checkHu(int huNum)
 {
 	Chunk *pChunk = NULL;
 	int n = splitChunk(pChunk,pNum - huNum);
-	printf("chunkNum:%d\n",n);
+	MyTrace(2,"chunkNum:%d\n",n);
 	if(n>5)//分块
 	{
-		printf("there is too many chunks to huPai\n");
+		MyTrace(2,"there is too many chunks to huPai\n");
 		return -1;
 	}
 	int i;
@@ -1208,14 +1209,14 @@ int checkHu(int huNum)
 	travel(link);
 	HuSetLink *hLink = createHuSetLink(link);
 	clearSetLink(link);link = NULL;g_link = NULL;
-	printf("huNumJ:%d,jkN:%d\n",huNumJ,hLink->jkN);
+	MyTrace(2,"huNumJ:%d,jkN:%d\n",huNumJ,hLink->jkN);
 	if(huNumJ > 2)
 	{
-		printf("全胡\n");
+		MyTrace(2,"any pai can hu\n");
 	}
 	else if(huNumJ < 0 || hLink->jkN == 0)
 	{
-		printf("没胡\n");
+		MyTrace(2,"no pai can hu\n");
 	}
 	else
 	{

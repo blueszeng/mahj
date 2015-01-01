@@ -5,7 +5,7 @@
 #include<math.h>
 #include<ctype.h>
 #include <stdlib.h>
-#include "mah_head.h"
+#include "mahj2.h"
 
 #include <sys/types.h>
 #include <sys/time.h>
@@ -38,7 +38,7 @@ int getCpuTime()
 	getrusage(RUSAGE_SELF, &rup);
 	long sec = rup.ru_utime.tv_sec + rup.ru_stime.tv_sec;
 	long usec = rup.ru_utime.tv_usec + rup.ru_stime.tv_usec;
-	printf("%d:%d",sec,usec);
+	MyTrace(2,"%d:%d",sec,usec);
 	usec += sec*1000000;
 	return usec;
 }
@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 	 fp = fopen("../mahjC02/data3", "r");//打开文件
 	 if (fp == NULL)
 	 {
-		 printf("打开文件失败！\n");
+		 MyTrace(2,"打开文件失败！\n");
        exit(EXIT_FAILURE);
 	 }
 
@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
 
 		checkHu(mah,mahj);
 	}
-	 printf("total huShu:%d\n",huShu);
+	 MyTrace(2,"total huShu:%d\n",huShu);
 
 	fclose(fp);
 	fp = NULL;
@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
 	{
        free(line);
 	}
-	printf("time:%d\n",getRunTime(0,1));
+	MyTrace(1,"time:%d\n",getRunTime(0,1));
     return EXIT_SUCCESS;
 }
 
@@ -299,7 +299,7 @@ int geneMahjsRes(TreeNode *node,MAHJ *mahjs[12])
 int printRes()
 {
 	NodeRes *node = startRes;
-	printf("hupai:\n");
+	MyTrace(2,"hupai:\n");
 	MAHJ *mahjs[12];
 	while(node){
 		if(geneMahjsRes(node->node,mahjs)==0)
@@ -309,18 +309,18 @@ int printRes()
 			int i;
 			for(i=0;i<12;i++)
 			{
-				printf("%d%d ",mahjs[i]->color,mahjs[i]->value);
+				MyTrace(2,"%d%d ",mahjs[i]->color,mahjs[i]->value);
 				if(mahjs[i]->isHu==1)
 				{
 					hus[hi++] = mahjs[i];
 				}
 			}
-			printf("hu: ");
+			MyTrace(2,"hu: ");
 			for(i=0;i<hi;i++)
 			{
-				printf("%d%d ",hus[i]->color,hus[i]->value);
+				MyTrace(2,"%d%d ",hus[i]->color,hus[i]->value);
 			}
-			printf("\n");
+			MyTrace(2,"\n");
 		}
 		node = node->next;
 	}
@@ -368,14 +368,14 @@ int saveRes(TreeNode *node,int huDui)
 
 int printHu()
 {
-	printf("jiang:");
-	printf("%d%d ",jiang.mahj[0]->color,jiang.mahj[0]->value);
-	printf("%d%d ",jiang.mahj[1]->color,jiang.mahj[1]->value);
+	MyTrace(2,"jiang:");
+	MyTrace(2,"%d%d ",jiang.mahj[0]->color,jiang.mahj[0]->value);
+	MyTrace(2,"%d%d ",jiang.mahj[1]->color,jiang.mahj[1]->value);
 	if(jiang.mahj[0]->isHu==1)
 	{
-		printf("jiangHu");
+		MyTrace(2,"jiangHu");
 	}
-	printf("\n");
+	MyTrace(2,"\n");
 //	printRes();
 }
 
@@ -383,7 +383,7 @@ int printHu()
 int checkHu(int mah[],MAHJ mahj[])
 {
 	int huNum = getHuNum(mah);
-	printf("huNum:%d\n",huNum);
+	MyTrace(2,"huNum:%d\n",huNum);
 	int norN = pNum - huNum;
 	int i = 0;
 
@@ -395,7 +395,7 @@ int checkHu(int mah[],MAHJ mahj[])
 	if(huNum>1)
 	{
 		normalNum = norN;
-		printf("normalNum:%d\n",normalNum);
+		MyTrace(2,"normalNum:%d\n",normalNum);
 		jiang.mahj[0]->isHu = 0;
 		jiang.mahj[1]->isHu = 0;
 		jiang.mahj[0]->value = 6;
@@ -418,7 +418,7 @@ int checkHu(int mah[],MAHJ mahj[])
 		//不用赖子作将
 		if(i<norN-1 && mah[i] == mah[i+1]){
 			normalNum = norN-2;
-			printf("normalNum:%d\n",normalNum);
+			MyTrace(2,"normalNum:%d\n",normalNum);
 			jiang.mahj[0]->isHu = 0;
 			jiang.mahj[1]->isHu = 0;
 			jiang.mahj[0]->value = mahj[i].value;
