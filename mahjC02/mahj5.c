@@ -68,13 +68,24 @@ int clearChunk(Chunk *chunkS)
 	clearStruct(chunkS);
 }
 
-int clearSetLink(SetLink *&link)
+int clearSetLink(SetLink *&link, LinkSet *parent)
 {
 	if(link == NULL) return 0;
 	LinkSet *set = link->ss;
 	while(set)
 	{
 		clearLinkSet(set);
+	}
+	if(parent)
+	{
+		if(link == parent ->ls)
+		{
+			parent ->ls = link ->next;
+		}
+		if(link == parent ->le)
+		{
+			parent ->le = link ->prev;
+		}
 	}
 	deleteStruct(link);
 }
@@ -97,7 +108,7 @@ int clearLinkSet(LinkSet *&set)
 	}
 	deleteStruct(set);
 }
-int clearSetLink(HuSetLink *&link)
+int clearSetLink(HuSetLink *&link, HuLinkSet *parent)
 {
 	if(link == NULL) return 0;
 	HuLinkSet *set = link->ss;
@@ -106,6 +117,17 @@ int clearSetLink(HuSetLink *&link)
 		clearLinkSet(set);
 	}
 	clearStruct(link->hs);
+	if(parent)
+	{
+		if(link == parent ->ls)
+		{
+			parent ->ls = link ->next;
+		}
+		if(link == parent ->le)
+		{
+			parent ->le = link ->prev;
+		}
+	}
 	deleteStruct(link);
 }
 
@@ -202,7 +224,7 @@ int main(int argc, char *argv[])
 	int count = 0,flag = 0;
 	int color, val, ture_color;
 	Card cards[4][9]; 
-	 fp = fopen("data3", "r");//打开文件
+	 fp = fopen("data6", "r");//打开文件
 	 if (fp == NULL)
 	 {
 		 MyTrace(2,"打开文件失败！\n");
@@ -935,7 +957,7 @@ int build(Chunk *chunkS,SetLink *link,int huNumJ,int height)
 				MyTrace(2,"%d ",res[i]);
 				if(res[i] < resMax)
 				{
-					clearSetLink(links[i]);
+					clearSetLink(links[i],set);
 				}
 			}
 			MyTrace(2,"\n");

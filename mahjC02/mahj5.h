@@ -1,12 +1,15 @@
 #ifndef __MAH__HEAD__H__
 #define __MAH__HEAD__H__
 
+
 #define pNum 14 
 #define pNum_1 (pNum) 
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "common.h"
 
 typedef struct mahj{
 	int color;
@@ -242,9 +245,9 @@ int str_to_value(char Str_Hex[],MAHJ *pMahj);
 int setPaiFromMah(int mah[],int normalN,char Pai[]);
 MAHJ value_to_mahj(int value);
 int mahj_to_value(MAHJ mahj);
-int clearSetLink(SetLink *&link);
+int clearSetLink(SetLink *&link, LinkSet *parent = NULL);
 int clearLinkSet(LinkSet *&set);
-int clearSetLink(HuSetLink *&link);
+int clearSetLink(HuSetLink *&link, HuLinkSet *parent = NULL);
 int clearLinkSet(HuLinkSet *&set);
 HuSetLink *createHuSetLink(SetLink *link);
 HuLinkSet *createHuLinkSet(LinkSet *set);
@@ -255,14 +258,5 @@ int printSPai(SPai *ss);
 int travel(SetLink *link);
 int travel(LinkSet *set);
 
-#define debug_level 1
-#if debug_level != 0
-#define MyTrace(level,fmt, args...) do { \
-	if( level <= debug_level )		\
-		printf(fmt, ## args); \
-} while (0)
-#else
-	#define MyTrace(a...)	
-#endif
 
 #endif
