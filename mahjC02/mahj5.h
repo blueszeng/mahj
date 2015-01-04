@@ -2,8 +2,8 @@
 #define __MAH__HEAD__H__
 
 
-#define pNum 14 
-#define pNum_1 (pNum) 
+#define pNum 15 
+#define pNum_1 (pNum-1) 
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,14 +15,6 @@ typedef struct mahj{
 	int color;
 	int value;
 }MAHJ;
-
-
-
-typedef struct hand{ 
-	int type;//0,¿Ì£¬£±£¬Ë³, 
-	MAHJ *mahj[3];
-	int num;
-}HAND;
 
 typedef struct jiang{
 	MAHJ *mahj[2];
@@ -89,8 +81,11 @@ struct huSetLink{
 	HuLinkSet *parent;
 	SPai *hs;
 	SPai *he;
+	SPai *gs;
+	SPai *ge;
+	int hasGu;
 	int jkN;
-	int outJKN;
+	int guN;
 	HuLinkSet *ss;
 	HuLinkSet *se;
 	HuSetLink *next;
@@ -101,8 +96,11 @@ struct huLinkSet{
 	HuSetLink *parent;
 	SPai *hs;
 	SPai *he;
+	SPai *gs;
+	SPai *ge;
+	int hasGu;
 	int jkN;
-	int outJKN;
+	int guN;
 	Unit *u;
 	HuSetLink *ls;
 	HuSetLink *le;
@@ -257,6 +255,13 @@ MAHJ *getMahjPointer(int color,int value);
 int printSPai(SPai *ss);
 int travel(SetLink *link);
 int travel(LinkSet *set);
-
+int travelGu(HuSetLink *link);
+int travelGu(HuLinkSet *set);
+int travelGuHu(HuSetLink *link,int jkN,SPai *gu);
+int travelGuHu(HuLinkSet *set,int jkN,SPai *gu);
+int clearHuPai(HuSetLink *link);
+int clearHuPai(HuLinkSet *set);
+int travelHasGu(HuSetLink *link, SPai *gu);
+int travelHasGu(HuLinkSet *set, SPai *gu);
 
 #endif
