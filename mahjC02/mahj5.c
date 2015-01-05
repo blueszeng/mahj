@@ -543,33 +543,33 @@ int addUnit(SetLink *link, Chunk *pChunk, int value[], int front, int back)
 	}
 }
 
-int addLink(LinkSet *set, Chunk *pChunk, int value[], int front[], int back[], int num)
+int addLink(LinkSet *set, Chunk *pChunk, int value[], int front[],int fi, int back[],int bi, int num)
 {
 	SetLink *link = addStruct(set ->ls, set ->le);
 	int i;
 	for(i=0;i<num;i++)
 	{
-		addUnit(link, pChunk, value, front[i], back[i]);
+		addUnit(link, pChunk, value, front[fi+i], back[bi+i]);
 	}
 }
 
-int addTwoATwoSet(SetLink *link, Chunk *pChunk,int *value, int front[],int back[],int num)//2+2+...
+int addTwoATwoSet(SetLink *link, Chunk *pChunk,int *value, int front[],int fi,int back[],int bi,int num)//2+2+...
 {
 	if(num==1)
 	{
-		addUnit(link, pChunk, value, front[0], back[0]);
+		addUnit(link, pChunk, value, front[fi], back[bi]);
 	}
 	else if(num==2)
 	{
 		LinkSet *set = addStruct(link ->ss, link ->se);
 		{
-			addLink(set, pChunk, value, front, back, num);
+			addLink(set, pChunk, value, front, fi, back, bi, num);
 		}
-		if(value[front[0]] == value[back[0]] && value[front[1]] == value[back[1]] && value[front[1]] - value[front[0]] < 3)
+		if(value[front[fi]] == value[back[bi]] && value[front[fi+1]] == value[back[bi+1]] && value[front[fi+1]] - value[front[fi+0]] < 3)
 		{
 			SetLink *link = addStruct(set ->ls, set ->le);
 			{
-				addUnit(link, pChunk, value, front[0], front[1]);
+				addUnit(link, pChunk, value, front[fi+0], front[fi+1]);
 			}
 		}
 	}
@@ -580,15 +580,15 @@ int addTwoATwoSet(SetLink *link, Chunk *pChunk,int *value, int front[],int back[
 			{
 				SetLink *link = addStruct(set ->ls, set->le);
 				{
-					addTwoATwoSet(link,pChunk,value,front,back,1);
-					addTwoATwoSet(link,pChunk,value,front+1,back+1,num-1);
+					addTwoATwoSet(link,pChunk,value,front,fi,back,bi,1);
+					addTwoATwoSet(link,pChunk,value,front,fi+1,back,bi+1,num-1);
 				}
 			}
 			{
 				SetLink *link = addStruct(set ->ls, set->le);
 				{
-					addTwoATwoSet(link,pChunk,value,front+2,back+2,1);
-					addTwoATwoSet(link,pChunk,value,front,back,num-1);
+					addTwoATwoSet(link,pChunk,value,front,fi+2,back,bi+2,1);
+					addTwoATwoSet(link,pChunk,value,front,fi,back,bi,num-1);
 				}
 			}
 		}
@@ -600,15 +600,15 @@ int addTwoATwoSet(SetLink *link, Chunk *pChunk,int *value, int front[],int back[
 			{
 				SetLink *link = addStruct(set ->ls, set->le);
 				{
-					addTwoATwoSet(link,pChunk,value,front,back,1);
-					addTwoATwoSet(link,pChunk,value,front+1,back+1,num-1);
+					addTwoATwoSet(link,pChunk,value,front,fi,back,bi,1);
+					addTwoATwoSet(link,pChunk,value,front,fi+1,back,bi+1,num-1);
 				}
 			}
 			{
 				SetLink *link = addStruct(set ->ls, set->le);
 				{
-					addTwoATwoSet(link,pChunk,value,front,back,2);
-					addTwoATwoSet(link,pChunk,value,front+2,back+2,num-2);
+					addTwoATwoSet(link,pChunk,value,front,fi,back,bi,2);
+					addTwoATwoSet(link,pChunk,value,front,fi+2,back,bi+2,num-2);
 				}
 			}
 		}
@@ -638,7 +638,7 @@ int addArraySet(SetLink *link, Chunk *pChunk,int *value, int index[],int si,int 
 				front[i] = index[si+i*2];
 				back[i] = index[si+i*2+1];
 			}
-			addTwoATwoSet(link,pChunk,value,front,back,pairs);
+			addTwoATwoSet(link,pChunk,value,front,0,back,0,pairs);
 		}
 		else
 		{
@@ -649,9 +649,9 @@ int addArraySet(SetLink *link, Chunk *pChunk,int *value, int index[],int si,int 
 				{
 					SetLink *link = addStruct(set ->ls, set->le);
 					{
-						addArraySet(link,pChunk,value,index,i,1);
-						addArraySet(link,pChunk,value,index,0,i);
-						addArraySet(link,pChunk,value,index,i+1,num-i-1);
+						addArraySet(link,pChunk,value,index,si+i,1);
+						addArraySet(link,pChunk,value,index,si,i);
+						addArraySet(link,pChunk,value,index,si+i+1,num-i-1);
 					}
 					i++;
 				}
