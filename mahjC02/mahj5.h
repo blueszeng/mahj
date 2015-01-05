@@ -2,7 +2,7 @@
 #define __MAH__HEAD__H__
 
 
-#define pNum 14 
+#define pNum 15 
 #define pNum_1 (pNum-1) 
 
 #include <stdio.h>
@@ -215,26 +215,26 @@ int diff(int obj[],int src[],int type,int num);//²î·Ö
 int product(int doc[],int vec1[],int vec2[],int num);//µã»ý
 int addUnit(SetLink *link, Chunk *pChunk, int value[], int front, int back);
 int addLink(LinkSet *set, Chunk *pChunk, int value[], int front[], int back[], int num);
-int addTwoATwoSet(SetLink *link, Chunk *pChunk,int *value, int front[],int back[],int num);
+int addTwoATwoSet(SetLink *link, Chunk *pChunk,int *value, int front[],int fi,int back[],int bi,int num);
 int addArraySet(SetLink *link, Chunk *pChunk,int *value, int index[],int si,int num);
 int build(Chunk *chunkS,SetLink *link,int huNumJ,int height);
 int travelHasGu(HuSetLink *link, SPai *gu);
 int travelHasGu(HuLinkSet *set, SPai *gu);
 HuSetLink *createHuSetLink(SetLink *link);
 HuLinkSet *createHuLinkSet(LinkSet *set);
-int getOutJKN(HuSetLink *link);
-int getOutGuJKN(HuSetLink *link);
-int getOutGu(HuSetLink *link);
+int getOutJKN(HuLinkSet *set);
+int getOutGuJKN(HuLinkSet *set);
+int getOutGu(HuLinkSet *set);
 int addSPai(SPai *&ss,SPai *&se,int color,int value);
 int addSPai(SPai *&ss,SPai *&se,SPai *sp);
 MAHJ *getMahjPointer(int color,int value);
-int travelHu(HuSetLink *link,int jkN);
 int printSPai(SPai *ss);
 int travelHasGu(HuSetLink *link, SPai *gu);
 int travelHasGu(HuLinkSet *set, SPai *gu);
-int travelHu(HuLinkSet *set,int jkN);
-int travelGuHu(HuSetLink *link,int jkN,SPai *gu);
-int travelGuHu(HuLinkSet *set,int jkN,SPai *gu);
+int travelHu(HuLinkSet *set);
+int travelHu(HuSetLink *link);
+int travelGuHu(HuSetLink *link);
+int travelGuHu(HuLinkSet *set);
 int clearHuPai(HuSetLink *link);
 int clearHuPai(HuLinkSet *set);
 int travelGu(HuSetLink *link);
