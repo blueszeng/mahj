@@ -2,14 +2,12 @@
 #define __MAH__HEAD__H__
 
 
-#define pNum 15 
-#define pNum_1 (pNum-1) 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "common.h"
+
 
 typedef struct mahj{
 	int color;
@@ -26,6 +24,16 @@ typedef struct shouPai{
 	struct shouPai *next;
 	struct shouPai *prev;
 }SPai;
+
+typedef struct hand{
+	int type;
+	SPai *sp;
+	SPai *ep;
+	int num;
+	struct hand *next;
+	struct hand *prev;
+}Hand;
+
 
 typedef struct sameShouPai{
 	SPai *sp;
@@ -61,6 +69,8 @@ struct huSetLink{
 	SPai *he;
 	SPai *gs;
 	SPai *ge;
+	Hand *hds;
+	Hand *hde;
 	int hasGu;
 	int jkN;
 	int guN;
@@ -86,11 +96,32 @@ struct huLinkSet{
 	HuLinkSet *prev;
 };
 
+typedef struct huUnitSetLink{
+	Unit *us;
+	Unit *ue;
+	Hand *hs;
+	Hand *he;
+	int jkN; 
+	struct huUnitSetLink *next;
+	struct huUnitSetLink *prev;
+}HuUnitSetLink;
+
+typedef struct huUnitLinkSet{
+	SPai *hus;
+	SPai *hue;
+	HuUnitSetLink *ls;
+	HuUnitSetLink *le;
+	struct huUnitLinkSet *next;
+	struct huUnitLinkSet *prev;
+}HuUnitLinkSet;
+
 
 typedef struct linkSet LinkSet;
 typedef struct setLink SetLink;
 
 struct setLink{
+	Hand *hs;
+	Hand *he;
 	LinkSet *ss;
 	LinkSet *se;
 	SetLink *next;
@@ -206,8 +237,9 @@ int clearLinkSet(HuLinkSet *&set);
 int splitStr(char *src, const char *delim, char *ps[]);
 int splitLinkStr(char *linkStr,int front[],int back[]);
 int splitSetStr(char *setStr,int* front[],int* back[],int *num);
-int sortP(int mah[],MAHJ mahj[]);
-int getHuNum(int mah[]); int sumGroup(int group[]);
+int sortP(int mah[],MAHJ mahj[], int huNum);
+int getHuNum(int mah[], int huNum);
+int sumGroup(int group[]);
 SPai *copySPai(SPai *start,SPai *end,SPai *deletes[],int sdi,int num);
 Chunk *splitSubChunk(SPai *sp);
 int splitChunk(Chunk *&chunkS,int normalNum);
@@ -229,22 +261,29 @@ int addSPai(SPai *&ss,SPai *&se,int color,int value);
 int addSPai(SPai *&ss,SPai *&se,SPai *sp);
 MAHJ *getMahjPointer(int color,int value);
 int printSPai(SPai *ss);
+int printMahj(MAHJ *mahj);
 int travelHasGu(HuSetLink *link, SPai *gu);
 int travelHasGu(HuLinkSet *set, SPai *gu);
-int travelHu(HuLinkSet *set);
-int travelHu(HuSetLink *link);
+int travelHu(HuLinkSet *set,HuUnitLinkSet *huset=NULL);
+int travelHu(HuSetLink *link,HuUnitLinkSet *huset=NULL);
 int travelGuHu(HuSetLink *link);
 int travelGuHu(HuLinkSet *set);
 int clearHuPai(HuSetLink *link);
 int clearHuPai(HuLinkSet *set);
 int travelGu(HuSetLink *link);
 int travelGu(HuLinkSet *set);
-int travel(SetLink *link);
-int travel(LinkSet *set);
-int checkHu(int huNum);
+int travel(SetLink *link,int hight=0);
+int travel(LinkSet *set,int hight=0);
+int checkHu(int huNum, int pNum);
 int str_to_value(char Str_Hex[],MAHJ *pMahj);
 int setPaiFromMah(int mah[],int normalN,char Pai[]);
 MAHJ value_to_mahj(int value);
 int mahj_to_value(MAHJ mahj);
+int saveHuUnitLink(HuUnitSetLink *hulink,HuLinkSet *set);
+int saveHuUnitLink(HuUnitLinkSet *huset,HuLinkSet *set);
+int travel(HuSetLink *link,int hight=0);
+int travel(HuLinkSet *set,int hight=0);
+int travelHand(Hand *hs,int debugLevel=2);
+int printUnit(Unit *u);
 
 #endif
