@@ -158,6 +158,30 @@ int clearLinkSet(HuLinkSet *&set)
 	deleteStruct(set);
 }
 
+int clearJKN(HuSetLink *link)
+{
+	if(link == NULL) return 0;
+	link->jkN = 0;
+	HuLinkSet *set = link->ss;
+	while(set)
+	{
+		set->jkN = 0;
+		set = set->next;
+	}
+}
+
+int clearJKN(HuLinkSet *set)
+{
+	if(set == NULL) return 0;
+	set->jkN = 0;
+	HuSetLink *link = set->ls;
+	while(link)
+	{
+		link->jkN = 0;
+		link = link->next;
+	}
+}
+
 int splitStr(char *src, const char *delim, char *ps[])
 {
 	int num = 0;
@@ -1008,6 +1032,7 @@ int travelHasGu(HuSetLink *link, SPai *gu)
 		{
 			link->hasGu = 1;
 		}
+		link->jkN += set->jkN;
 		set = set ->next;
 	}
 }
@@ -1021,6 +1046,8 @@ int travelHasGu(HuLinkSet *set, SPai *gu)
 		{
 			set->hasGu = 1;
 		}
+		if(set->hasGu == 0 && set->u->type < 2)
+			set->jkN = 1;
 	}
 	else
 	{
@@ -1032,6 +1059,8 @@ int travelHasGu(HuLinkSet *set, SPai *gu)
 			{
 				set->hasGu = 1;
 			}
+			if(link->jkN > set->jkN)
+				set->jkN = link->jkN;
 			link = link ->next;
 		}
 	}
@@ -1101,12 +1130,6 @@ int getOutJKN(HuLinkSet *set)
 {
 	if(set == NULL) return 0;
 	return set->parent->jkN - set->jkN + getOutJKN(set->parent->parent);
-}
-
-int getOutGuJKN(HuLinkSet *set)
-{
-	if(set == NULL) return 0;
-	return set->parent->jkN - set->jkN - (set->parent->hasGu - set->hasGu) + getOutJKN(set->parent->parent);
 }
 
 int getOutGu(HuLinkSet *set)
@@ -1310,7 +1333,7 @@ int printUnit(Unit *u)
 
 int saveHuUnitLink(HuUnitSetLink *hulink,HuLinkSet *set)
 {
-	if(set->u)
+	if(set->u && set->hasGu == 0)
 	{
 		Unit *u = addStruct(hulink->us,hulink->ue);
 		u->type = set->u->type;
@@ -1319,31 +1342,34 @@ int saveHuUnitLink(HuUnitSetLink *hulink,HuLinkSet *set)
 	else
 	{
 		HuSetLink *link = set->ls;
-		HuSetLink *l = link;
-		int jkN = l->jkN;
-		if(set->jkN > jkN)
+		if(link)
 		{
-			while(link)
+			HuSetLink *l = link;
+			int jkN = l->jkN - l->hasGu;
+			if(set->jkN > jkN)
 			{
-				if(link->jkN > jkN)
-					l = link;
-				link = link->next;
+				while(link)
+				{
+					if(link->jkN - link->hasGu > jkN)
+						l = link;
+					link = link->next;
+				}
 			}
-		}
-		link = l;
-		Hand *hs = link->hds;
-		travelHand(hs,2);
-		while(hs)
-		{
-			Hand *hand = createHand(hs->sp,3);
-			insertStruct(hand,hulink ->hs,hulink ->he);
-			hs = hs ->next;
-		}
-		HuLinkSet *set = link->ss;
-		while(set)
-		{
-			saveHuUnitLink(hulink,set);
-			set = set->next;
+			link = l;
+			Hand *hs = link->hds;
+			travelHand(hs,2);
+			while(hs)
+			{
+				Hand *hand = createHand(hs->sp,3);
+				insertStruct(hand,hulink ->hs,hulink ->he);
+				hs = hs ->next;
+			}
+			HuLinkSet *set = link->ss;
+			while(set)
+			{
+				saveHuUnitLink(hulink,set);
+				set = set->next;
+			}
 		}
 	}
 }
@@ -1442,7 +1468,7 @@ int travelHu(HuLinkSet *set,HuUnitLinkSet *huset)
 }
 
 
-int travelGuHu(HuSetLink *link)//抛掉一个孤后还能胡么
+int travelGuHu(HuSetLink *link,HuUnitLinkSet *huset)//抛掉一个孤后还能胡么
 {
 	HuLinkSet *set = link ->ss;
 	while(set)
@@ -1455,41 +1481,50 @@ int travelGuHu(HuSetLink *link)//抛掉一个孤后还能胡么
 			Unit *u = set->u;
 			if(u)
 			{
-				MAHJ *mahj = u->mahj;
-				printMahj(mahj);
-					int outGu = getOutGu(set);
-					if(outGu == 0)
-						break;
-					int outGuJKN = getOutGuJKN(set);
+					MAHJ *mahj = u->mahj;
+					int outGuJKN = getOutJKN(set);
+					int addnums = 0;
 					if(u->type == 0) 
 					{
-						addSPai(link->hs,link->he,mahj->color,mahj->value);
+						addnums += addSPai(link->hs,link->he,mahj->color,mahj->value);
 						if(outGuJKN)
 						{
-							addSPai(link->hs,link->he,mahj->color,mahj->value+1);
-							addSPai(link->hs,link->he,mahj->color,mahj->value+2);
-							addSPai(link->hs,link->he,mahj->color,mahj->value-1);
-							addSPai(link->hs,link->he,mahj->color,mahj->value-2);
+							addnums += addSPai(link->hs,link->he,mahj->color,mahj->value+1);
+							addnums += addSPai(link->hs,link->he,mahj->color,mahj->value+2);
+							addnums += addSPai(link->hs,link->he,mahj->color,mahj->value-1);
+							addnums += addSPai(link->hs,link->he,mahj->color,mahj->value-2);
 						}
 					}
 					else if(outGuJKN)
 					{
 						if(u->type == 1)
-							addSPai(link->hs,link->he,mahj->color,mahj->value);
+							addnums += addSPai(link->hs,link->he,mahj->color,mahj->value);
 						else if(u->type == 2)
 						{
-							addSPai(link->hs,link->he,mahj->color,mahj->value+2);
-							addSPai(link->hs,link->he,mahj->color,mahj->value-1);
+							addnums += addSPai(link->hs,link->he,mahj->color,mahj->value+2);
+							addnums += addSPai(link->hs,link->he,mahj->color,mahj->value-1);
 						}
 						else if(u->type == 3)
 						{
-							addSPai(link->hs,link->he,mahj->color,mahj->value+1);
+							addnums += addSPai(link->hs,link->he,mahj->color,mahj->value+1);
+						}
+					}
+					if(addnums > 0)
+					{
+						saveHuUnitLink(huset,set);
+						HuUnitSetLink *hulink = huset->le;
+						int hunum = calcHuPai(hulink,huset);
+						printf("hunum%d\n",hunum);
+						if(hunum == 0)
+						{
+							huset->le = hulink->prev;
+							deleteStruct(hulink);
 						}
 					}
 			}
 			else
 			{
-				travelGuHu(set);
+				travelGuHu(set,huset);
 				SPai *ss = set ->hs;
 				SPai *se = set ->he;
 				if(se)
@@ -1507,12 +1542,12 @@ int travelGuHu(HuSetLink *link)//抛掉一个孤后还能胡么
 	}
 }
 
-int travelGuHu(HuLinkSet *set)
+int travelGuHu(HuLinkSet *set,HuUnitLinkSet *huset)
 {
 	HuSetLink *link = set ->ls;
 	while(link)
 	{
-		travelGuHu(link);
+		travelGuHu(link,huset);
 		SPai *ss = link ->hs;
 		SPai *se = link ->he;
 		if(se)
@@ -1751,9 +1786,15 @@ int checkHu(int huNum,int pNum)
 			clearHuPai(hLink);
 			while(sp)
 			{
+				HuUnitLinkSet *huset = NULL;
+				newStruct(huset);
+				clearJKN(hLink);
 				travelHasGu(hLink,sp);
-				travelGuHu(hLink);
+				travelGuHu(hLink,huset);
 				printSPai(hLink->hs);
+printf("____LINE::%d____,____FUNC_____:%s______\n",__LINE__,__FUNCTION__);
+				travelHuUnit(huset);
+printf("____LINE::%d____,____FUNC_____:%s______\n",__LINE__,__FUNCTION__);
 				clearHuPai(hLink);
 				sp = sp->next;
 			}

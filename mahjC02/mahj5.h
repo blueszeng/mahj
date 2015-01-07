@@ -266,8 +266,8 @@ int travelHasGu(HuSetLink *link, SPai *gu);
 int travelHasGu(HuLinkSet *set, SPai *gu);
 int travelHu(HuLinkSet *set,HuUnitLinkSet *huset=NULL);
 int travelHu(HuSetLink *link,HuUnitLinkSet *huset=NULL);
-int travelGuHu(HuSetLink *link);
-int travelGuHu(HuLinkSet *set);
+int travelGuHu(HuSetLink *link,HuUnitLinkSet *huset=NULL);
+int travelGuHu(HuLinkSet *set,HuUnitLinkSet *huset=NULL);
 int clearHuPai(HuSetLink *link);
 int clearHuPai(HuLinkSet *set);
 int travelGu(HuSetLink *link);
@@ -285,5 +285,7 @@ int travel(HuSetLink *link,int hight=0);
 int travel(HuLinkSet *set,int hight=0);
 int travelHand(Hand *hs,int debugLevel=2);
 int printUnit(Unit *u);
+int clearJKN(HuSetLink *link);
+int clearJKN(HuLinkSet *set);
 
 #endif
