@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 	int color, val, ture_color;
 	struct pai cards[4][10]; 
 	struct pai *laizi = NULL;
-	 fp = fopen("../mahjC02/data5", "r");//打开文件
+	 fp = fopen("../mahjC02/data10", "r");//打开文件
 	 if (fp == NULL)
 	 {
 		 MyTrace(2,"打开文件失败！\n");
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
 		if((mah_num > pNum)||(mah_num < pNum_1))//第%d行只有%d个数据不合法,本行分割不成功，读取下一行
 		{
 			count++;	
-			continue;
+			//continue;
 		}
 		count++;//成功，行计数器加一
 
@@ -156,7 +156,11 @@ int main(int argc, char *argv[])
 		zong++; //合法的数据条数
 		sortP(mah,mahj);
 
+	setTime(0);
+	int k = 0;
+	for(;k<2000;k++)
 		checkHu(mah,mahj);
+	MyTrace(1,"time:%d\n",getRunTime(0,1));
 	}
 	 MyTrace(2,"total huShu:%d\n",huShu);
 
@@ -166,7 +170,6 @@ int main(int argc, char *argv[])
 	{
        free(line);
 	}
-	MyTrace(1,"time:%d\n",getRunTime(0,1));
     return EXIT_SUCCESS;
 }
 

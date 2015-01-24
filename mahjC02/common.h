@@ -1,7 +1,7 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
-#define debug_level 2
+#define debug_level 1
 #define printLine 0
 #if debug_level != 0
 #define MyTrace(level,fmt, args...) do { \

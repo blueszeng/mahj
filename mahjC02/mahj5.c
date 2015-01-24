@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
 	int count = 0,flag = 0;
 	int color, val, ture_color;
 	Card cards[4][9]; 
-	 fp = fopen("data8", "r");//打开文件
+	 fp = fopen("data10", "r");//打开文件
 	 if (fp == NULL)
 	 {
 		 MyTrace(2,"打开文件失败！\n");
@@ -341,7 +341,11 @@ int main(int argc, char *argv[])
 		sortP(mah,g_mahj,pNum);
 		int huNum = getHuNum(mah,pNum);
 		MyTrace(2,"huNum:%d\n",huNum);
-		checkHu(huNum,pNum);
+		int k = 0;
+		setTime(0);
+		for(;k<2000;k++)
+			checkHu(huNum,pNum);
+		MyTrace(1,"time:%d\n",getRunTime(0,1));
 	}
 	 MyTrace(2,"total huShu:%d\n",huShu);
 
@@ -351,7 +355,6 @@ int main(int argc, char *argv[])
 	{
        free(line);
 	}
-	MyTrace(1,"time:%d\n",getRunTime(0,1));
     return EXIT_SUCCESS;
 }
 
@@ -1279,7 +1282,6 @@ int travelHu(HuSetLink *link,HuUnitLinkSet *huset)
 				saveHuUnitLink(huset,set);
 				HuUnitSetLink *hulink = huset->le;
 				int hunum = calcHuPai(hulink,huset);
-				printf("hunum%d\n",hunum);
 				if(hunum == 0)
 				{
 					huset->le = hulink->prev;
@@ -1439,9 +1441,7 @@ int travelHuUnit(HuUnitLinkSet *huset)
 	HuUnitSetLink *hulink = huset->ls;
 	while(hulink)
 	{
-printf("____LINE::%d____,____FUNC_____:%s______\n",__LINE__,__FUNCTION__);
 		travelHuUnit(hulink);
-printf("____LINE::%d____,____FUNC_____:%s______\n",__LINE__,__FUNCTION__);
 		hulink = hulink->next;
 	}
 }
@@ -1514,7 +1514,6 @@ int travelGuHu(HuSetLink *link,HuUnitLinkSet *huset)//抛掉一个孤后还能胡么
 						saveHuUnitLink(huset,set);
 						HuUnitSetLink *hulink = huset->le;
 						int hunum = calcHuPai(hulink,huset);
-						printf("hunum%d\n",hunum);
 						if(hunum == 0)
 						{
 							huset->le = hulink->prev;
@@ -1728,6 +1727,7 @@ int checkHu(int huNum,int pNum)
 	Chunk *pChunk = NULL;
 	int n = splitChunk(pChunk,pNum - huNum);
 	MyTrace(2,"chunkNum:%d\n",n);
+
 	/*
 	if(n>5)//分块
 	{
@@ -1792,9 +1792,7 @@ int checkHu(int huNum,int pNum)
 				travelHasGu(hLink,sp);
 				travelGuHu(hLink,huset);
 				printSPai(hLink->hs);
-printf("____LINE::%d____,____FUNC_____:%s______\n",__LINE__,__FUNCTION__);
 				travelHuUnit(huset);
-printf("____LINE::%d____,____FUNC_____:%s______\n",__LINE__,__FUNCTION__);
 				clearHuPai(hLink);
 				sp = sp->next;
 			}
