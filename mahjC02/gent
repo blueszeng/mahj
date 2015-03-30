@@ -1,2 +1,0 @@
-#g++ -g -fpermissive test5.c -o t
-g++  test5.c -o t

@@ -36,27 +36,3 @@ two:
 $(TARGET):$(SOURCE) $(SRC_SOURCE)
 	$(CC)  $(MAIN) $(FLAGS) $(INCLUDE) $(LIB)   -o $(TARGET)
 
-
-rebuilt:clean $(TARGET)
-
-
-.PHONY:clean allclean del
-clean:
-	-rm -f $(TARGET)
-	-rm -f test
-
-del allclean:
-	-rm -f $(TARGET)
-	-rm -f tags
-
-.PHONY:tag tags ctag ctags
-### useage  vi -t myFunc
-tag tags ctag ctags:
-	ctags -R *
-
-.PHONY:md5 md
-md md5:
-	date >> game.md5
-	md5sum *.c *.h >> game.md5
-	date >> game.md5
-
